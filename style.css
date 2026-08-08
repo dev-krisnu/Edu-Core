@@ -39,7 +39,7 @@ h1,h2,h3,h4,h5,h6,p,label{
 
 .medium-size-ka-text {
     color: grey;
-    font-size: 0.9rem;
+    font-size: 1.3rem;
 }
 
 .btn-vibrant {
@@ -51,7 +51,7 @@ h1,h2,h3,h4,h5,h6,p,label{
     font-weight: 600;
     letter-spacing: 0.3px;
     transition:background-color 0.2s ease, transform 0.1s ease;
-    width: 100%;
+    width: 60%;
 }
 
 .btn-vibrant:hover {
