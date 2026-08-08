@@ -8,7 +8,10 @@
   </head>
   <body>
     <div class="parent">
-    <div class="home-page-ka-header-div"></div>
+    <div class="header-educore-ka-logo-div"></div>
+    <div class="header-educore-ka-text-div"></div>
+    <div class="header-institute-ka-logo-div"></div>
+    <div class="header-institute-ka-text-div"></div>
     <div class="notice-board-div"></div>
     <div class="role-switch-karne-ka-slider-div"></div>
     <div class="login-details-div"></div>
