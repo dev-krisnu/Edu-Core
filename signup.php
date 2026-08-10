@@ -10,10 +10,8 @@ if(isset($_POST['sign-up']))
     $tempname=$_FILES['file_upload']['tmp_name'];
     $folder="product/".$photo;
     move_uploaded_file($tempname, $folder);
-
-    $sql = "INSERT INTO student(full_name, email, phone, address) VALUES ('$name', '$email', '$phone', '$address')";
-    $query = mysqli_query($conn, $sql);
-    
+    $sql = "INSERT INTO student(full_name, email,phone, address,role,photo) VALUES ('$name','$email','$phone','$address','$role','$photo')";
+    $query = mysqli_query($conn, $sql);  
     if($query){
         echo "<div class='alert alert-success text-center mt-3'>DATA INSERTED...</div>";
     } else {
@@ -37,6 +35,8 @@ if(isset($_POST['sign-up']))
             <input type="text" name="email" placeholder="Enter Email"><br>
             <input type="password" name="password" placeholder="Create Password"><br>
             <input type="password" name="confirm-password" placeholder="Confirm Password"><br>
+            <input type="role" name="role" placeholder="Enter Role"><br>
+            <input type="file" name="photo" placeholder="Upload Photo"><br>
             <input type="submit" name="signup" value="Signup">
         </form>
         <br>

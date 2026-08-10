@@ -40,12 +40,12 @@
           <br>
           <div class="mb-3 w-100">
               <h4><label class="form-label">Email address</label></h4>
-              <input type="email" class="form-control" placeholder="Example : komalshaw@gmail.com">
+              <input type="email" class="form-control" placeholder="Example :unknown@gmail.com">
           </div>
           <br>
           <div class="mb-3 w-100">
               <h4><label class="form-label">Password</label><h4>
-              <input type="password" class="form-control" placeholder="••••••••••••">
+              <input type="password" class="form-control" placeholder="••••••••••••••••••••">
           </div>
           <input type="submit" name="login" value="Login" class="btn btn-vibrant mt-2 mb-2" style="width: 40%; display: block; margin-left: auto;">
       </div>
@@ -58,7 +58,7 @@
       <div class="login-details-submit-button-wala-div">
         <h3 class="medium-size-ka-text">New Account ?</h3>
         <br>
-        <button class="btn btn-vibrant">Sign In</button>
+       <a href="signup.php" class="btn btn-primary">Sign Up</a>
       </div>
       
       <div class="forgot-password-div">
@@ -68,8 +68,7 @@
         <h3 class="medium-size-ka-text">Edu-Core</h3>
         <h3 class="medium-size-ka-text">v1.0.0</h3>
       </div>
-    </div>
-    
+    </div>   
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
   </body>
 </html>
