@@ -2,12 +2,16 @@
 /**
  * EduCore - AI Engine Configuration
  * Supports Google Gemini (free tier) and Ollama (local)
+ * Configuration loaded from .env file
  */
-define('AI_PROVIDER', 'gemini'); // 'gemini' or 'ollama'
+
+require_once __DIR__ . '/env.php';
+
+define('AI_PROVIDER', env('AI_PROVIDER', 'gemini')); // 'gemini' or 'ollama'
 
 // Google Gemini API (get key from https://aistudio.google.com)
-define('GEMINI_API_KEY', 'YOUR_GEMINI_API_KEY_HERE');
-define('GEMINI_MODEL', 'gemini-2.0-flash');
+define('GEMINI_API_KEY', env('GEMINI_API_KEY', ''));
+define('GEMINI_MODEL', env('GEMINI_MODEL', 'gemini-2.0-flash'));
 define('GEMINI_API_URL', 'https://generativelanguage.googleapis.com/v1beta/models/' . GEMINI_MODEL . ':generateContent');
 
 // Ollama (local fallback)

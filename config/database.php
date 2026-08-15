@@ -9,6 +9,8 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/env.php';
+
 function getDbConnection(): PDO
 {
     static $pdo = null;
@@ -17,13 +19,11 @@ function getDbConnection(): PDO
         return $pdo;
     }
 
-    // TODO: move these into environment variables / a non-committed .env
-    // before deploying anywhere beyond localhost.
-    $host    = 'localhost';
-    $dbName  = 'educore';
+    $host    = env('DB_HOST', 'localhost');
+    $dbName  = env('DB_NAME', 'educore');
     $charset = 'utf8mb4';
-    $user    = 'root';
-    $pass    = '';
+    $user    = env('DB_USER', 'root');
+    $pass    = env('DB_PASSWORD', '');
 
     $dsn = "mysql:host={$host};dbname={$dbName};charset={$charset}";
 
@@ -43,4 +43,10 @@ function getDbConnection(): PDO
     }
 
     return $pdo;
+}
+
+// Backward compatibility alias
+function getDB(): PDO
+{
+    return getDbConnection();
 }

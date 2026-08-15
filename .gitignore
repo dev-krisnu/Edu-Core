@@ -1,0 +1,43 @@
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+.gitkeep
+
+# Uploads and temporary files
+uploads/
+!uploads/.gitkeep
+temp/
+cache/
+
+# PHP
+vendor/
+composer.lock
+
+# Node (if using)
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Logs
+logs/
+*.log
+
+# Database backups
+*.sql
+!database/schema.sql
+
+# Sensitive data
+.env
+config/ai_config_live.php
