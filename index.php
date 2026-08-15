@@ -1,141 +1,275 @@
 <?php
+/**
+ * index.php — EduCore login gateway
+ * Handles authentication for all seven roles (student, faculty, admin,
+ * parent, finance, library, placements). The Student/Faculty toggle in the
+ * UI is a convenience default for the two most common logins; the actual
+ * redirect after login always follows the role stored in the database,
+ * never the toggle, so nobody can spoof their way into the wrong portal.
+ */
+
+declare(strict_types=1);
 session_start();
+
 require_once __DIR__ . '/config/database.php';
-require_once __DIR__ . '/includes/auth_check.php';
 
-$error = '';
+// ---- Already logged in? Skip the gateway. ----
+if (!empty($_SESSION['user_id']) && !empty($_SESSION['role'])) {
+    header('Location: ' . roleDashboardPath($_SESSION['role']));
+    exit;
+}
 
+function roleDashboardPath(string $role): string
+{
+    $map = [
+        'admin'       => '/admin/dashboard.php',
+        'faculty'     => '/faculty/dashboard.php',
+        'student'     => '/student/dashboard.php',
+        'parent'      => '/parent/dashboard.php',
+        'finance'     => '/finance/dashboard.php',
+        'library'     => '/library/dashboard.php',
+        'placements'  => '/placements/dashboard.php',
+    ];
+    return $map[$role] ?? '/index.php';
+}
+
+// ---- CSRF token ----
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+
+$errors    = [];
+$oldEmail  = '';
+
+// ---- Handle login submission ----
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $email = trim($_POST['email'] ?? '');
-    $password = $_POST['password'] ?? '';
+    $submittedToken = $_POST['csrf_token'] ?? '';
+    $email    = trim((string)($_POST['email'] ?? ''));
+    $password = (string)($_POST['password'] ?? '');
+    $oldEmail = htmlspecialchars($email, ENT_QUOTES, 'UTF-8');
 
-    if (empty($email) || empty($password)) {
-        $error = 'Please enter both email and password.';
+    if (!hash_equals($_SESSION['csrf_token'], $submittedToken)) {
+        $errors[] = 'Your session expired. Please try logging in again.';
+    } elseif ($email === '' || $password === '') {
+        $errors[] = 'Enter both your email address and password.';
+    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $errors[] = 'Enter a valid email address.';
     } else {
         try {
-            $db = getDB();
-            $stmt = $db->prepare('SELECT * FROM users WHERE email = ? AND status = "active"');
-            $stmt->execute([$email]);
+            $pdo = getDbConnection();
+            $stmt = $pdo->prepare(
+                'SELECT id, full_name, email, password_hash, role, status
+                 FROM users WHERE email = :email LIMIT 1'
+            );
+            $stmt->execute(['email' => $email]);
             $user = $stmt->fetch();
 
-            if ($user && password_verify($password, $user['password'])) {
-                $_SESSION['user_id'] = $user['id'];
-                $_SESSION['user_role'] = $user['role'];
-                $_SESSION['user_name'] = $user['full_name'];
-                logAction('User logged in', 'auth');
-                header('Location: dashboard.php');
-                exit;
+            if (!$user || !password_verify($password, $user['password_hash'])) {
+                $errors[] = 'That email and password don\'t match our records.';
+            } elseif ($user['status'] === 'suspended') {
+                $errors[] = 'This account has been suspended. Contact your administrator.';
             } else {
-                $error = 'Invalid email or password.';
+                session_regenerate_id(true);
+                $_SESSION['user_id']   = $user['id'];
+                $_SESSION['full_name'] = $user['full_name'];
+                $_SESSION['role']      = $user['role'];
+
+                header('Location: ' . roleDashboardPath($user['role']));
+                exit;
             }
-        } catch (Exception $e) {
-            $error = 'Database connection failed. Please import database/schema.sql first.';
+        } catch (Throwable $e) {
+            error_log('[EduCore] Login error: ' . $e->getMessage());
+            $errors[] = 'Something went wrong on our end. Please try again.';
         }
     }
 }
 
+// ---- Notices for the board (fails gracefully if the table isn't set up yet) ----
 $notices = [];
 try {
-    $db = getDB();
-    $notices = $db->query('SELECT * FROM notices ORDER BY created_at DESC LIMIT 5')->fetchAll();
-} catch (Exception $e) {
-    // DB not set up yet
+    $pdo = getDbConnection();
+    $stmt = $pdo->query(
+        "SELECT title FROM notices WHERE is_public = 1
+         ORDER BY created_at DESC LIMIT 4"
+    );
+    $notices = $stmt ? $stmt->fetchAll() : [];
+} catch (Throwable $e) {
+    $notices = [];
 }
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EduCore — Login</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link href="assets/css/educore.css" rel="stylesheet">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EduCore Login · Dr. B.C. Roy Engineering College</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
-<div class="login-page">
-    <div class="login-container fade-in">
-        <div class="login-brand-panel">
-            <div class="brand-logo"><i class="bi bi-mortarboard-fill"></i></div>
-            <h1>EduCore</h1>
-            <p class="tagline">Unified AI-Powered Educational ERP & LMS</p>
-            <ul class="feature-list">
-                <li><i class="bi bi-robot"></i> AI Question Setter & 24/7 Helpdesk</li>
-                <li><i class="bi bi-shield-check"></i> Proctored Online Exam Terminal</li>
-                <li><i class="bi bi-search"></i> Plagiarism & Anti-Cheating Inspector</li>
-                <li><i class="bi bi-qr-code-scan"></i> QR-Code Library Management</li>
-                <li><i class="bi bi-cash-stack"></i> Dynamic Fee & Payroll Engine</li>
-                <li><i class="bi bi-briefcase"></i> AI Resume Matcher & Placements</li>
-            </ul>
-        </div>
 
-        <div class="login-form-panel">
-            <h2 class="mb-1" style="font-weight:800;">Welcome Back</h2>
-            <p class="text-muted mb-4">Sign in to your EduCore account</p>
+<div class="aurora-bg">
+  <div class="aurora-blob b1"></div>
+  <div class="aurora-blob b2"></div>
+  <div class="aurora-blob b3"></div>
+</div>
+<div class="grain"></div>
 
-            <?php if ($notices): ?>
-            <div class="notice-panel">
-                <strong><i class="bi bi-megaphone me-1"></i> Notice Board</strong>
-                <?php foreach (array_slice($notices, 0, 2) as $n): ?>
-                <div class="notice-item">
-                    <strong><?= htmlspecialchars($n['title']) ?></strong>
-                    <span><?= htmlspecialchars(substr($n['content'], 0, 80)) ?>...</span>
-                </div>
-                <?php endforeach; ?>
-            </div>
-            <?php endif; ?>
+<div class="container-shell" style="padding: 24px; max-width: 1200px; margin: 0 auto;">
 
-            <div class="role-selector">
-                <?php
-                $roles = [
-                    ['id' => 'admin', 'label' => 'Admin', 'color' => '#ef4444', 'email' => 'admin@educore.edu'],
-                    ['id' => 'faculty', 'label' => 'Faculty', 'color' => '#8b5cf6', 'email' => 'faculty@educore.edu'],
-                    ['id' => 'student', 'label' => 'Student', 'color' => '#06b6d4', 'email' => 'student@educore.edu'],
-                    ['id' => 'finance', 'label' => 'Finance', 'color' => '#f59e0b', 'email' => 'finance@educore.edu'],
-                    ['id' => 'librarian', 'label' => 'Library', 'color' => '#ec4899', 'email' => 'librarian@educore.edu'],
-                ];
-                foreach ($roles as $i => $r): ?>
-                <span class="role-chip <?= $i === 2 ? 'active' : '' ?>"
-                      style="--chip-color:<?= $r['color'] ?>;--chip-bg:<?= $r['color'] ?>15"
-                      data-email="<?= $r['email'] ?>"
-                      onclick="selectRole(this)"><?= $r['label'] ?></span>
-                <?php endforeach; ?>
-            </div>
-
-            <?php if ($error): ?>
-            <div class="alert alert-danger py-2"><?= htmlspecialchars($error) ?></div>
-            <?php endif; ?>
-
-            <form method="POST">
-                <div class="form-floating-custom">
-                    <label>Email Address</label>
-                    <input type="email" name="email" id="loginEmail" value="student@educore.edu" required placeholder="you@educore.edu">
-                </div>
-                <div class="form-floating-custom">
-                    <label>Password</label>
-                    <input type="password" name="password" value="password123" required placeholder="••••••••">
-                </div>
-                <button type="submit" class="btn btn-gradient w-100 mb-3 py-3">
-                    <i class="bi bi-box-arrow-in-right me-2"></i>Sign In
-                </button>
-            </form>
-
-            <div class="text-center">
-                <small class="text-muted">Demo password: <code>password123</code> for all roles</small>
-                <br>
-                <a href="signup.php" class="text-decoration-none mt-2 d-inline-block">Create new account →</a>
-            </div>
-        </div>
+  <!-- Top strip -->
+  <div class="glass-strip" style="display:flex; align-items:center; justify-content:space-between; padding: 16px 24px; margin-bottom: 20px;">
+    <div style="display:flex; align-items:center; gap:14px;">
+      <div class="logo-mark">EC</div>
+      <div>
+        <div class="h-display" style="font-size:1.15rem;">Edu<span class="brand-gradient">Core</span></div>
+        <div class="text-muted" style="font-size:0.78rem;">Campus Management System</div>
+      </div>
     </div>
+    <div style="text-align:right;">
+      <div class="h-display" style="font-size:1.05rem;">Dr. B.C. Roy Engineering College</div>
+      <div class="eyebrow" style="color:var(--amber-300);">Durgapur</div>
+    </div>
+  </div>
+
+  <!-- Main grid -->
+  <div style="display:grid; grid-template-columns: 300px 1fr; gap: 20px; flex: 1;" class="main-grid">
+
+    <!-- Left: notices + ID badge -->
+    <div style="display:flex; flex-direction:column; gap:20px;" class="lg-hide">
+      <div class="glass-panel" style="padding: 22px;">
+        <div class="eyebrow" style="margin-bottom:12px;">Notice Board</div>
+        <?php if (empty($notices)): ?>
+          <p class="notice-empty">No new notices at this time.</p>
+        <?php else: ?>
+          <ul class="notice-list">
+            <?php foreach ($notices as $n): ?>
+              <li><span class="notice-dot"></span><?= htmlspecialchars($n['title'], ENT_QUOTES, 'UTF-8') ?></li>
+            <?php endforeach; ?>
+          </ul>
+        <?php endif; ?>
+      </div>
+
+      <div>
+        <div class="eyebrow" style="margin-bottom:12px;">Your Digital ID</div>
+        <div class="id-badge" id="idBadge">
+          <div class="id-badge-content">
+            <div class="id-badge-top">
+              <span class="pill">EDU · ID</span>
+              <div class="id-badge-qr"></div>
+            </div>
+            <div>
+              <div class="id-badge-name">Campus Access Card</div>
+              <div class="id-badge-id">DBCREC · SCAN TO VERIFY</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: login -->
+    <div>
+      <div class="glass-panel glass-hi" style="padding: 8px; margin-bottom: 20px;">
+        <div style="display:flex; justify-content:center; padding: 10px;">
+          <div class="role-toggle" id="roleToggle">
+            <input type="radio" name="role_display" id="role-student" checked>
+            <input type="radio" name="role_display" id="role-faculty">
+            <div class="role-thumb"></div>
+            <label for="role-student">Student</label>
+            <label for="role-faculty">Faculty</label>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:grid; grid-template-columns: 1.6fr 1fr; gap: 20px;" class="login-grid">
+
+        <div class="glass-panel" style="padding: 36px;">
+          <h1 class="h-display" style="font-size:1.9rem; margin-bottom: 26px;">Welcome back</h1>
+
+          <?php foreach ($errors as $err): ?>
+            <div class="alert alert-error"><?= htmlspecialchars($err, ENT_QUOTES, 'UTF-8') ?></div>
+          <?php endforeach; ?>
+
+          <form method="POST" action="index.php" novalidate>
+            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8') ?>">
+
+            <div class="field">
+              <label for="email">Email address</label>
+              <input type="email" id="email" name="email" placeholder="Example: komalshaw@gmail.com" value="<?= $oldEmail ?>" required autofocus>
+            </div>
+
+            <div class="field">
+              <label for="password">Password</label>
+              <input type="password" id="password" name="password" placeholder="••••••••••" required>
+              <button type="button" class="field-icon-btn" id="togglePw" aria-label="Show password">👁</button>
+            </div>
+
+            <button type="submit" class="btn btn-gradient btn-block">Log in</button>
+          </form>
+
+          <div class="divider-label">or</div>
+
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span class="text-muted" style="font-size:0.85rem;">New here?</span>
+            <a href="signup.php" class="text-link">Create an account →</a>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
+            <span class="text-muted" style="font-size:0.85rem;">Forgot something?</span>
+            <a href="forgotPassword.php" class="text-link">Reset your password →</a>
+          </div>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:20px;">
+          <div class="glass-panel" style="padding: 24px; text-align:center;">
+            <div class="eyebrow" style="margin-bottom:10px;">Need help?</div>
+            <p class="text-muted" style="font-size:0.85rem; margin-bottom:16px;">Our AI assistant can help you recover access or find the right portal.</p>
+            <a href="homePageChatbot.php" class="btn btn-ghost btn-block">Open AI Assistant</a>
+          </div>
+
+          <div class="glass-panel" style="padding: 20px; text-align:center;">
+            <div class="h-display" style="font-size:1rem;">Edu<span class="brand-gradient">Core</span></div>
+            <div class="pill" style="margin-top:10px;">v1.0.0</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>
-function selectRole(el) {
-    document.querySelectorAll('.role-chip').forEach(c => c.classList.remove('active'));
-    el.classList.add('active');
-    document.getElementById('loginEmail').value = el.dataset.email;
-}
+  // Password visibility toggle
+  const pwInput = document.getElementById('password');
+  const pwToggle = document.getElementById('togglePw');
+  pwToggle.addEventListener('click', () => {
+    const isHidden = pwInput.type === 'password';
+    pwInput.type = isHidden ? 'text' : 'password';
+    pwToggle.textContent = isHidden ? '🙈' : '👁';
+    pwToggle.setAttribute('aria-label', isHidden ? 'Hide password' : 'Show password');
+  });
+
+  // Subtle tilt on the digital ID badge signature element
+  const badge = document.getElementById('idBadge');
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches === false) {
+    badge.addEventListener('mousemove', (e) => {
+      const rect = badge.getBoundingClientRect();
+      const x = (e.clientX - rect.left) / rect.width - 0.5;
+      const y = (e.clientY - rect.top) / rect.height - 0.5;
+      badge.style.transform = `rotateX(${y * -8}deg) rotateY(${x * 10}deg)`;
+    });
+    badge.addEventListener('mouseleave', () => {
+      badge.style.transform = 'rotateX(0deg) rotateY(0deg)';
+    });
+  }
 </script>
+
+<style>
+  @media (max-width: 960px) {
+    .main-grid { grid-template-columns: 1fr !important; }
+    .login-grid { grid-template-columns: 1fr !important; }
+  }
+</style>
+
 </body>
 </html>
