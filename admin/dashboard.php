@@ -49,10 +49,7 @@ try {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard - EduCore</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link href="../assets/css/educore.css" rel="stylesheet">
-    <link href="../assets/css/themes.css" rel="stylesheet">
+    <?php $portalBase = '..'; include __DIR__ . '/../includes/portal_head.php'; ?>
     <style>
         .admin-grid {
             display: grid;
@@ -215,7 +212,7 @@ try {
         }
     </style>
 </head>
-<body data-role="admin">
+<body class="portal-page" data-role="admin">
     <div class="aurora-bg">
         <div class="aurora-blob b1"></div>
         <div class="aurora-blob b2"></div>

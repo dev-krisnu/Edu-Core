@@ -34,6 +34,88 @@ body.portal-page p {
   color: rgba(245, 244, 255, 0.82);
 }
 
+/* Bootstrap component overrides — without these, raw .card/.table/.form-control/
+   .modal/.dropdown render with Bootstrap's default white background while
+   inheriting this page's light text color, making the text invisible. */
+body.portal-page .card {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #f5f4ff;
+}
+
+body.portal-page .card-header,
+body.portal-page .card-footer {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+body.portal-page .table {
+  color: #f5f4ff;
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+body.portal-page .table > :not(caption) > * > * {
+  background-color: transparent;
+  color: #f5f4ff;
+  border-bottom-color: rgba(255, 255, 255, 0.12);
+}
+
+body.portal-page .table-hover > tbody > tr:hover > * {
+  background-color: rgba(255, 255, 255, 0.06);
+  color: #f5f4ff;
+}
+
+body.portal-page .form-control,
+body.portal-page .form-select {
+  background-color: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #f5f4ff;
+}
+
+body.portal-page .form-control::placeholder {
+  color: rgba(245, 244, 255, 0.5);
+}
+
+body.portal-page .form-control:focus,
+body.portal-page .form-select:focus {
+  background-color: rgba(255, 255, 255, 0.09);
+  border-color: var(--theme-primary, #6366f1);
+  color: #f5f4ff;
+  box-shadow: 0 0 0 0.25rem rgba(99, 102, 241, 0.25);
+}
+
+body.portal-page .modal-content {
+  background: #14123a;
+  color: #f5f4ff;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+body.portal-page .modal-header,
+body.portal-page .modal-footer {
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+body.portal-page .dropdown-menu {
+  background: #14123a;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+body.portal-page .dropdown-item {
+  color: #f5f4ff;
+}
+
+body.portal-page .dropdown-item:hover,
+body.portal-page .dropdown-item:focus {
+  background: rgba(255, 255, 255, 0.08);
+  color: #f5f4ff;
+}
+
+body.portal-page .list-group-item {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #f5f4ff;
+}
+
 body.portal-page .section-title {
   color: #f5f4ff;
   font-size: 1.15rem;

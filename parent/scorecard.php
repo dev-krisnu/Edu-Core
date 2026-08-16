@@ -17,7 +17,7 @@ $pdo = getDbConnection();
 
 // Fetch linked students
 $stmt = $pdo->prepare("
-    SELECT DISTINCT s.id, s.name, s.email
+    SELECT DISTINCT s.id, s.full_name, s.email
     FROM users s
     WHERE s.parent_id = ? AND s.role = 'student'
 ");
@@ -48,10 +48,7 @@ $avgPercentage = count($examResults) > 0 ? array_reduce($examResults, fn($sum, $
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Student Scorecard - EduCore</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link href="../assets/css/educore.css" rel="stylesheet">
-    <link href="../assets/css/themes.css" rel="stylesheet">
+    <?php $portalBase = '..'; include __DIR__ . '/../includes/portal_head.php'; ?>
     <style>
         .parent-container {
             max-width: 1100px;
@@ -212,7 +209,7 @@ $avgPercentage = count($examResults) > 0 ? array_reduce($examResults, fn($sum, $
         }
     </style>
 </head>
-<body data-role="parent">
+<body class="portal-page" data-role="parent">
     <div class="aurora-bg">
         <div class="aurora-blob b1"></div>
         <div class="aurora-blob b2"></div>
@@ -237,7 +234,7 @@ $avgPercentage = count($examResults) > 0 ? array_reduce($examResults, fn($sum, $
                         <?php foreach ($linkedStudents as $student): ?>
                             <a href="?student=<?php echo $student['id']; ?>" 
                                class="student-btn <?php echo $student['id'] == $selectedStudent ? 'active' : ''; ?>">
-                                <i class="bi bi-person"></i> <?php echo htmlspecialchars($student['name']); ?>
+                                <i class="bi bi-person"></i> <?php echo htmlspecialchars($student['full_name']); ?>
                             </a>
                         <?php endforeach; ?>
                     </div>

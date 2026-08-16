@@ -88,10 +88,7 @@ usort($alerts, function($a, $b) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Alerts & Notifications - EduCore</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link href="../assets/css/educore.css" rel="stylesheet">
-    <link href="../assets/css/themes.css" rel="stylesheet">
+    <?php $portalBase = '..'; include __DIR__ . '/../includes/portal_head.php'; ?>
     <style>
         .alerts-container {
             max-width: 1000px;
@@ -250,7 +247,7 @@ usort($alerts, function($a, $b) {
         }
     </style>
 </head>
-<body data-role="parent">
+<body class="portal-page" data-role="parent">
     <div class="aurora-bg">
         <div class="aurora-blob b1"></div>
         <div class="aurora-blob b2"></div>
