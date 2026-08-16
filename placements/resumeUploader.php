@@ -47,7 +47,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_FILES['resume'])) {
 
 // Fetch all student resumes
 $stmt = $pdo->prepare("
-    SELECT sr.*, u.name as student_name, u.email,
+    SELECT sr.*, u.full_name as student_name, u.email,
            COUNT(DISTINCT pa.id) as applications
     FROM student_resumes sr
     JOIN users u ON sr.student_id = u.id
@@ -61,7 +61,7 @@ $resumes = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Get students without resumes
 $stmt = $pdo->query("
-    SELECT u.id, u.name, u.email
+    SELECT u.id, u.full_name AS name, u.email
     FROM users u
     LEFT JOIN student_resumes sr ON u.id = sr.student_id
     WHERE u.role = 'student' AND sr.id IS NULL

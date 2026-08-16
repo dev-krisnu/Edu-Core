@@ -15,8 +15,8 @@ requireRole(['finance']);
 $pdo = getDbConnection();
 
 try {
-    $totalInvoiced = $pdo->query('SELECT COALESCE(SUM(amount), 0) as total FROM fee_invoices')->fetch()['total'] ?? 0;
-    $totalPaid = $pdo->query('SELECT COALESCE(SUM(amount), 0) as total FROM fee_invoices WHERE status = "paid"')->fetch()['total'] ?? 0;
+    $totalInvoiced = (float) ($pdo->query('SELECT COALESCE(SUM(amount), 0) as total FROM fee_invoices')->fetch()['total'] ?? 0);
+    $totalPaid = (float) ($pdo->query('SELECT COALESCE(SUM(amount), 0) as total FROM fee_invoices WHERE status = "paid"')->fetch()['total'] ?? 0);
     $pendingAmount = $totalInvoiced - $totalPaid;
     $invoiceCount = $pdo->query('SELECT COUNT(*) as count FROM fee_invoices WHERE status = "pending"')->fetch()['count'] ?? 0;
     
@@ -250,7 +250,7 @@ try {
                                     <?php foreach ($recentInvoices as $invoice): ?>
                                         <tr>
                                             <td><?php echo htmlspecialchars($invoice['id'] ?? 'N/A'); ?></td>
-                                            <td>₹<?php echo number_format($invoice['amount'] ?? 0, 2); ?></td>
+                                            <td>₹<?php echo number_format((float)($invoice['amount'] ?? 0), 2); ?></td>
                                             <td>
                                                 <span class="status-<?php echo $invoice['status'] ?? 'pending'; ?>">
                                                     <?php echo ucfirst($invoice['status'] ?? 'pending'); ?>

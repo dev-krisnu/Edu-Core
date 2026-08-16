@@ -31,7 +31,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['action'])) {
         if ($exam_name && $course_id && $exam_date && $duration && $total_marks) {
             try {
                 $stmt = $pdo->prepare("
-                    INSERT INTO exams (exam_name, course_id, faculty_id, exam_date, duration, total_marks, status)
+                    INSERT INTO exams (title, course_id, created_by, start_time, duration_minutes, total_marks, status)
                     VALUES (?, ?, ?, ?, ?, ?, 'scheduled')
                 ");
                 $stmt->execute([$exam_name, $course_id, $currentUser['id'], $exam_date . ' ' . $exam_time, $duration, $total_marks]);
@@ -46,17 +46,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['action'])) {
 }
 
 // Fetch faculty's courses
-$stmt = $pdo->prepare("SELECT * FROM courses WHERE faculty_id = ? ORDER BY course_name");
+$stmt = $pdo->prepare("SELECT * FROM courses WHERE faculty_id = ? ORDER BY title");
 $stmt->execute([$currentUser['id']]);
 $courses = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Fetch faculty's exams
 $stmt = $pdo->prepare("
-    SELECT e.*, c.course_name
+    SELECT e.*, c.title AS course_name
     FROM exams e
     LEFT JOIN courses c ON e.course_id = c.id
-    WHERE e.faculty_id = ?
-    ORDER BY e.exam_date DESC
+    WHERE e.created_by = ?
+    ORDER BY e.start_time DESC
     LIMIT 20
 ");
 $stmt->execute([$currentUser['id']]);
@@ -298,7 +298,7 @@ $exams = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                     <option value="">Select Course</option>
                                     <?php foreach ($courses as $course): ?>
                                         <option value="<?php echo $course['id']; ?>">
-                                            <?php echo htmlspecialchars($course['course_name']); ?>
+                                            <?php echo htmlspecialchars($course['title']); ?>
                                         </option>
                                     <?php endforeach; ?>
                                 </select>
@@ -377,13 +377,13 @@ $exams = $stmt->fetchAll(PDO::FETCH_ASSOC);
                         </thead>
                         <tbody>
                             <?php foreach ($exams as $exam): 
-                                $examDate = new DateTime($exam['exam_date']);
+                                $examDate = new DateTime($exam['start_time']);
                             ?>
                                 <tr>
-                                    <td><?php echo htmlspecialchars($exam['exam_name']); ?></td>
+                                    <td><?php echo htmlspecialchars($exam['title']); ?></td>
                                     <td><?php echo htmlspecialchars($exam['course_name'] ?? 'N/A'); ?></td>
                                     <td><?php echo $examDate->format('M d, Y h:i A'); ?></td>
-                                    <td><?php echo $exam['duration']; ?> min</td>
+                                    <td><?php echo $exam['duration_minutes']; ?> min</td>
                                     <td><?php echo $exam['total_marks']; ?></td>
                                     <td>
                                         <span class="status-badge status-<?php echo strtolower($exam['status'] ?? 'scheduled'); ?>">

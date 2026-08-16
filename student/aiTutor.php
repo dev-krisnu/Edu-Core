@@ -414,7 +414,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['question'])) {
             showTypingIndicator();
 
             // Send to server
-            fetch('./ aiTutor.php', {
+            fetch('./aiTutor.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                 body: 'question=' + encodeURIComponent(question) + '&topic=' + encodeURIComponent(topic)

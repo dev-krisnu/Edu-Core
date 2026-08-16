@@ -19,7 +19,7 @@ $difficulty_filter = trim($_GET['difficulty'] ?? '');
 $course_filter = intval($_GET['course'] ?? 0);
 
 // Fetch questions with filters
-$sql = "SELECT eq.*, c.course_name,
+$sql = "SELECT eq.*, c.title AS course_name,
                COUNT(e.id) as times_used
         FROM exam_questions eq
         LEFT JOIN courses c ON eq.course_id = c.id
@@ -44,7 +44,7 @@ $stmt->execute($params);
 $questions = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Get faculty courses
-$stmt = $pdo->prepare("SELECT id, course_name FROM courses WHERE faculty_id = ? ORDER BY course_name");
+$stmt = $pdo->prepare("SELECT id, title AS course_name FROM courses WHERE faculty_id = ? ORDER BY title");
 $stmt->execute([$currentUser['id']]);
 $courses = $stmt->fetchAll(PDO::FETCH_ASSOC);
 

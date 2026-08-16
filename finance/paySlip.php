@@ -18,7 +18,7 @@ include __DIR__ . '/../includes/header.php';
 <div class="stat-card animate-slide-in">
 <h4><?= htmlspecialchars($s['name']) ?></h4>
 <p><?= htmlspecialchars($s['month']) ?></p>
-<h3>₹<?= number_format($s['net']) ?></h3>
+<h3>₹<?= number_format((float)$s['net']) ?></h3>
 <button class="btn btn-sm btn-outline-primary mt-2"><i class="bi bi-download me-1"></i>Download PDF</button>
 </div>
 <?php endforeach; ?>

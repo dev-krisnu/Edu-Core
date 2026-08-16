@@ -18,7 +18,7 @@ $pdo = getDbConnection();
 // Fetch invoices with filtering
 $status_filter = trim($_GET['status'] ?? '');
 
-$sql = "SELECT fi.*, u.name, ft.fee_name 
+$sql = "SELECT fi.*, u.full_name AS name, ft.name AS fee_name 
         FROM fee_invoices fi
         JOIN users u ON fi.student_id = u.id
         LEFT JOIN fee_templates ft ON fi.template_id = ft.id
@@ -229,11 +229,11 @@ while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
                 <!-- Summary Cards -->
                 <div class="summary-cards">
                     <div class="summary-card">
-                        <div class="summary-value">₹<?php echo number_format($summary['completed']['total'] ?? 0, 2); ?></div>
+                        <div class="summary-value">₹<?php echo number_format((float)($summary['completed']['total'] ?? 0), 2); ?></div>
                         <div class="summary-label">Completed Payments</div>
                     </div>
                     <div class="summary-card">
-                        <div class="summary-value">₹<?php echo number_format($summary['pending']['total'] ?? 0, 2); ?></div>
+                        <div class="summary-value">₹<?php echo number_format((float)($summary['pending']['total'] ?? 0), 2); ?></div>
                         <div class="summary-label">Pending Payments</div>
                     </div>
                     <div class="summary-card">
@@ -287,7 +287,7 @@ while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
                                     <td><strong>#<?php echo htmlspecialchars($invoice['id']); ?></strong></td>
                                     <td><?php echo htmlspecialchars($invoice['name']); ?></td>
                                     <td><?php echo htmlspecialchars($invoice['fee_name'] ?? 'General Fee'); ?></td>
-                                    <td>₹<?php echo number_format($invoice['amount'], 2); ?></td>
+                                    <td>₹<?php echo number_format((float)$invoice['amount'], 2); ?></td>
                                     <td><?php echo $dueDate->format('M d, Y'); ?></td>
                                     <td>
                                         <span class="status-badge <?php echo $statusClass; ?>">

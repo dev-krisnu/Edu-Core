@@ -17,7 +17,7 @@ $pdo = getDbConnection();
 
 // Fetch linked students
 $stmt = $pdo->prepare("
-    SELECT DISTINCT s.id, s.name, s.email
+    SELECT DISTINCT s.id, s.full_name AS name, s.email
     FROM users s
     WHERE s.parent_id = ? AND s.role = 'student'
 ");
@@ -33,7 +33,7 @@ if ($selectedStudent) {
     $stmt = $pdo->prepare("
         SELECT 
             'attendance' as type,
-            CONCAT('Low attendance in ', c.course_name) as message,
+            CONCAT('Low attendance in ', c.title) as message,
             CONCAT(ROUND(COUNT(CASE WHEN a.status = 'present' THEN 1 END) / COUNT(*) * 100), '% attendance') as details,
             NOW() as created_at,
             'warning' as severity
@@ -65,13 +65,14 @@ if ($selectedStudent) {
     $stmt = $pdo->prepare("
         SELECT 
             'performance' as type,
-            CONCAT('Low performance in exam') as message,
-            CONCAT(ROUND((e.obtained_marks / e.total_marks * 100)), '%') as details,
-            e.exam_date as created_at,
-            CASE WHEN (e.obtained_marks / e.total_marks) < 0.4 THEN 'error' ELSE 'warning' END as severity
-        FROM exams e
-        WHERE e.student_id = ? AND e.obtained_marks / e.total_marks < 0.6
-        ORDER BY e.exam_date DESC
+            CONCAT('Low performance in ', e.title) as message,
+            CONCAT(ROUND((er.obtained_marks / e.total_marks * 100)), '%') as details,
+            er.submitted_at as created_at,
+            CASE WHEN (er.obtained_marks / e.total_marks) < 0.4 THEN 'error' ELSE 'warning' END as severity
+        FROM exam_responses er
+        JOIN exams e ON er.exam_id = e.id
+        WHERE er.student_id = ? AND er.status = 'graded' AND (er.obtained_marks / e.total_marks) < 0.6
+        ORDER BY er.submitted_at DESC
     ");
     $stmt->execute([$selectedStudent]);
     $alerts = array_merge($alerts, $stmt->fetchAll(PDO::FETCH_ASSOC));

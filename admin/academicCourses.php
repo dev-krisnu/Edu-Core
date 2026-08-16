@@ -10,7 +10,7 @@ require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../includes/auth_check.php';
 
 requireLogin();
-requireRole(['admin']);
+requireRole(['super_admin']);
 
 $currentUser = getCurrentUser();
 $pdo = getDbConnection();
@@ -30,7 +30,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['action'])) {
         if ($course_name && $course_code && $faculty_id && $credits && $semester) {
             try {
                 $stmt = $pdo->prepare("
-                    INSERT INTO courses (course_name, course_code, faculty_id, credits, semester)
+                    INSERT INTO courses (title, code, faculty_id, credits, semester)
                     VALUES (?, ?, ?, ?, ?)
                 ");
                 $stmt->execute([$course_name, $course_code, $faculty_id, $credits, $semester]);
@@ -46,13 +46,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['action'])) {
 
 // Fetch all courses with faculty info
 $stmt = $pdo->prepare("
-    SELECT c.*, u.name as faculty_name,
+    SELECT c.*, u.full_name as faculty_name,
            COUNT(DISTINCT ce.student_id) as enrolled_students
     FROM courses c
     LEFT JOIN users u ON c.faculty_id = u.id
     LEFT JOIN course_enrollments ce ON c.id = ce.course_id
     GROUP BY c.id
-    ORDER BY c.semester, c.course_code
+    ORDER BY c.semester, c.code
 ");
 $stmt->execute([]);
 $courses = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -363,8 +363,8 @@ $faculty = $stmt->fetchAll(PDO::FETCH_ASSOC);
                         <tbody>
                             <?php foreach ($courses as $course): ?>
                                 <tr>
-                                    <td><strong><?php echo htmlspecialchars($course['course_code']); ?></strong></td>
-                                    <td><?php echo htmlspecialchars($course['course_name']); ?></td>
+                                    <td><strong><?php echo htmlspecialchars($course['code']); ?></strong></td>
+                                    <td><?php echo htmlspecialchars($course['title']); ?></td>
                                     <td><?php echo htmlspecialchars($course['faculty_name'] ?? 'Unassigned'); ?></td>
                                     <td>
                                         <span class="semester-badge">Sem <?php echo $course['semester']; ?></span>
@@ -372,10 +372,10 @@ $faculty = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                     <td><?php echo $course['credits']; ?></td>
                                     <td><?php echo $course['enrolled_students']; ?> students</td>
                                     <td>
-                                        <button class="action-btn" onclick="alert('Edit: ' + '<?php echo addslashes($course['course_code']); ?>')">
+                                        <button class="action-btn" onclick="alert('Edit: ' + '<?php echo addslashes($course['code']); ?>')">
                                             <i class="bi bi-pencil"></i> Edit
                                         </button>
-                                        <button class="action-btn" onclick="alert('Delete: ' + '<?php echo addslashes($course['course_code']); ?>')">
+                                        <button class="action-btn" onclick="alert('Delete: ' + '<?php echo addslashes($course['code']); ?>')">
                                             <i class="bi bi-trash"></i> Delete
                                         </button>
                                     </td>

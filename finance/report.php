@@ -22,12 +22,12 @@ $toDate = trim($_GET['to'] ?? date('Y-m-d'));
 // Fetch revenue data
 $stmt = $pdo->prepare("
     SELECT 
-        DATE(payment_date) as date,
+        DATE(created_at) as date,
         COUNT(*) as transactions,
         SUM(amount) as total_amount
     FROM fee_invoices
-    WHERE status = 'completed' AND payment_date BETWEEN ? AND ?
-    GROUP BY DATE(payment_date)
+    WHERE status = 'paid' AND created_at BETWEEN ? AND ?
+    GROUP BY DATE(created_at)
     ORDER BY date DESC
 ");
 $stmt->execute([$fromDate . ' 00:00:00', $toDate . ' 23:59:59']);
@@ -37,12 +37,12 @@ $dailyRevenue = $stmt->fetchAll(PDO::FETCH_ASSOC);
 $stmt = $pdo->prepare("
     SELECT 
         COUNT(*) as total_invoices,
-        SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed,
+        SUM(CASE WHEN status = 'paid' THEN 1 ELSE 0 END) as completed,
         SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending,
         SUM(amount) as total_amount,
-        SUM(CASE WHEN status = 'completed' THEN amount ELSE 0 END) as collected
+        SUM(CASE WHEN status = 'paid' THEN amount ELSE 0 END) as collected
     FROM fee_invoices
-    WHERE payment_date BETWEEN ? AND ?
+    WHERE created_at BETWEEN ? AND ?
 ");
 $stmt->execute([$fromDate . ' 00:00:00', $toDate . ' 23:59:59']);
 $summary = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -51,7 +51,7 @@ $summary = $stmt->fetch(PDO::FETCH_ASSOC);
 $stmt = $pdo->prepare("
     SELECT status, COUNT(*) as count, SUM(amount) as total
     FROM fee_invoices
-    WHERE payment_date BETWEEN ? AND ?
+    WHERE created_at BETWEEN ? AND ?
     GROUP BY status
 ");
 $stmt->execute([$fromDate . ' 00:00:00', $toDate . ' 23:59:59']);
@@ -278,16 +278,16 @@ while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
                     <div class="summary-card">
                         <div class="card-label">Total Invoices</div>
                         <div class="card-value"><?php echo $summary['total_invoices']; ?></div>
-                        <div class="card-subtext">₹<?php echo number_format($summary['total_amount'] ?? 0, 2); ?> total</div>
+                        <div class="card-subtext">₹<?php echo number_format((float)($summary['total_amount'] ?? 0), 2); ?> total</div>
                     </div>
                     <div class="summary-card">
                         <div class="card-label">Completed Payments</div>
-                        <div class="card-value">₹<?php echo number_format($summary['collected'] ?? 0, 2); ?></div>
+                        <div class="card-value">₹<?php echo number_format((float)($summary['collected'] ?? 0), 2); ?></div>
                         <div class="card-subtext"><?php echo $summary['completed'] ?? 0; ?> invoices paid</div>
                     </div>
                     <div class="summary-card">
                         <div class="card-label">Pending Payments</div>
-                        <div class="card-value">₹<?php echo number_format(($summary['total_amount'] ?? 0) - ($summary['collected'] ?? 0), 2); ?></div>
+                        <div class="card-value">₹<?php echo number_format((float)(($summary['total_amount'] ?? 0) - ($summary['collected'] ?? 0)), 2); ?></div>
                         <div class="card-subtext"><?php echo $summary['pending'] ?? 0; ?> pending</div>
                     </div>
                     <div class="summary-card">
@@ -321,7 +321,7 @@ while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
                                 <tr>
                                     <td><?php echo date('M d, Y', strtotime($day['date'])); ?></td>
                                     <td><?php echo $day['transactions']; ?></td>
-                                    <td><strong>₹<?php echo number_format($day['total_amount'], 2); ?></strong></td>
+                                    <td><strong>₹<?php echo number_format((float)$day['total_amount'], 2); ?></strong></td>
                                 </tr>
                             <?php endforeach; ?>
                         </tbody>

@@ -43,15 +43,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['action'])) {
 
 // Fetch faculty's exams with submission stats
 $stmt = $pdo->prepare("
-    SELECT e.*, c.course_name,
+    SELECT e.*, c.title AS course_name,
            COUNT(DISTINCT er.id) as total_submissions,
            SUM(CASE WHEN er.status = 'submitted' THEN 1 ELSE 0 END) as pending_grading
     FROM exams e
     LEFT JOIN courses c ON e.course_id = c.id
     LEFT JOIN exam_responses er ON e.id = er.exam_id
-    WHERE e.faculty_id = ? AND e.status = 'completed'
+    WHERE e.created_by = ? AND e.status = 'completed'
     GROUP BY e.id
-    ORDER BY e.exam_date DESC
+    ORDER BY e.start_time DESC
     LIMIT 20
 ");
 $stmt->execute([$currentUser['id']]);
@@ -61,7 +61,7 @@ $exams = $stmt->fetchAll(PDO::FETCH_ASSOC);
 $selectedExam = intval($_GET['exam'] ?? ($exams[0]['id'] ?? 0));
 if ($selectedExam) {
     $stmt = $pdo->prepare("
-        SELECT er.*, u.name as student_name, e.total_marks
+        SELECT er.*, u.full_name as student_name, e.total_marks
         FROM exam_responses er
         JOIN users u ON er.student_id = u.id
         JOIN exams e ON er.exam_id = e.id

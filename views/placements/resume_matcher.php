@@ -4,7 +4,7 @@ requireRole(['tpo']);
 require_once __DIR__ . '/../../controllers/AIController.php';
 
 $pageTitle = 'AI Resume Matcher';
-$basePath = '../..';
+$basePath = '..';
 $result = null;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {

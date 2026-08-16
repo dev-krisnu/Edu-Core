@@ -280,7 +280,7 @@ $failedExams = $totalExams - $passedExams;
                     <div style="display: flex; flex-direction: column; gap: 12px;">
                         <?php foreach ($results as $result): 
                             $gradeClass = 'grade-' . strtolower($result['grade']);
-                            $percentage = $result['percentage'];
+                            $percentage = (float) $result['percentage'];
                         ?>
                             <div class="result-item">
                                 <div class="grade-badge <?php echo $gradeClass; ?>">

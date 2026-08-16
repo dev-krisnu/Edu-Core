@@ -10,7 +10,7 @@ require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../includes/auth_check.php';
 
 requireLogin();
-requireRole(['library']);
+requireRole(['librarian']);
 
 $currentUser = getCurrentUser();
 $pdo = getDbConnection();

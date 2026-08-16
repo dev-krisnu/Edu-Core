@@ -10,7 +10,7 @@ require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../includes/auth_check.php';
 
 requireLogin();
-requireRole(['admin']);
+requireRole(['super_admin']);
 
 $currentUser = getCurrentUser();
 $pdo = getDbConnection();
@@ -19,7 +19,7 @@ $action_filter = trim($_GET['action'] ?? '');
 $days = intval($_GET['days'] ?? 7);
 
 // Fetch system logs
-$sql = "SELECT sl.*, u.name as user_name
+$sql = "SELECT sl.*, u.full_name as user_name
         FROM system_logs sl
         LEFT JOIN users u ON sl.user_id = u.id
         WHERE sl.created_at >= DATE_SUB(NOW(), INTERVAL ? DAY)";

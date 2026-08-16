@@ -28,12 +28,15 @@ $selectedStudent = intval($_GET['student'] ?? ($linkedStudents[0]['id'] ?? 0));
 
 // Fetch student's exam results
 $stmt = $pdo->prepare("
-    SELECT e.*, c.course_name,
-           ROUND((e.obtained_marks / e.total_marks) * 100, 2) as percentage
-    FROM exams e
+    SELECT er.obtained_marks, er.submitted_at,
+           e.title AS exam_name, e.total_marks, e.start_time AS exam_date,
+           c.title AS course_name,
+           ROUND((er.obtained_marks / e.total_marks) * 100, 2) as percentage
+    FROM exam_responses er
+    JOIN exams e ON er.exam_id = e.id
     JOIN courses c ON e.course_id = c.id
-    WHERE e.student_id = ? AND e.status = 'completed'
-    ORDER BY e.exam_date DESC
+    WHERE er.student_id = ? AND er.status = 'graded'
+    ORDER BY er.submitted_at DESC
     LIMIT 10
 ");
 $stmt->execute([$selectedStudent]);

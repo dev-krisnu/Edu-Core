@@ -257,8 +257,8 @@ try {
                                 <div class="course-card">
                                     <div class="course-header">
                                         <div>
-                                            <div class="course-name"><?php echo htmlspecialchars($course['course_name']); ?></div>
-                                            <div class="course-code"><?php echo htmlspecialchars($course['course_code'] ?? 'N/A'); ?></div>
+                                            <div class="course-name"><?php echo htmlspecialchars($course['title']); ?></div>
+                                            <div class="course-code"><?php echo htmlspecialchars($course['code'] ?? 'N/A'); ?></div>
                                         </div>
                                     </div>
                                     <div class="course-stats">

@@ -10,7 +10,7 @@ require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../includes/auth_check.php';
 
 requireLogin();
-requireRole(['library']);
+requireRole(['librarian']);
 
 $currentUser = getCurrentUser();
 $pdo = getDbConnection();
@@ -18,7 +18,7 @@ $pdo = getDbConnection();
 $status_filter = trim($_GET['status'] ?? '');
 
 // Fetch fines
-$sql = "SELECT lc.*, u.name as student_name, u.email,
+$sql = "SELECT lc.*, u.full_name as student_name, u.email,
                lb.book_title, lc.due_date,
                DATEDIFF(CURDATE(), lc.due_date) as days_overdue
         FROM library_circulation lc

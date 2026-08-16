@@ -3,7 +3,7 @@ require_once __DIR__ . '/../../includes/auth_check.php';
 requireRole(['faculty']);
 
 $pageTitle = 'Plagiarism Inspector';
-$basePath = '../..';
+$basePath = '..';
 $result = null;
 
 include __DIR__ . '/../../includes/header.php';

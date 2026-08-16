@@ -54,7 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['topic'])) {
 
 // Fetch existing question banks
 $stmt = $pdo->prepare("
-    SELECT eq.*, c.course_name
+    SELECT eq.*, c.title AS course_name
     FROM exam_questions eq
     LEFT JOIN courses c ON eq.course_id = c.id
     WHERE eq.created_by = ?

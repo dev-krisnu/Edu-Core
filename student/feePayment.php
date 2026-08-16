@@ -18,7 +18,7 @@ $pdo = getDbConnection();
 
 // Fetch pending invoices
 $stmt = $pdo->prepare("
-    SELECT fi.*, ft.name AS fee_name, ft.amount AS template_amount
+    SELECT fi.*, ft.name AS fee_name, ft.amount AS template_amount, ft.due_date
     FROM fee_invoices fi
     LEFT JOIN fee_templates ft ON fi.template_id = ft.id
     WHERE fi.student_id = ? AND fi.status IN ('pending', 'overdue')
@@ -311,16 +311,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['action'])) {
                         </thead>
                         <tbody>
                             <?php foreach ($pendingInvoices as $invoice): 
-                                $dueDate = new DateTime($invoice['due_date']);
+                                $dueDate = $invoice['due_date'] ? new DateTime($invoice['due_date']) : null;
                                 $today = new DateTime();
-                                $isOverdue = $dueDate < $today;
+                                $isOverdue = $dueDate ? ($dueDate < $today) : false;
                                 $statusClass = $isOverdue ? 'status-overdue' : 'status-pending';
                             ?>
                                 <tr>
                                     <td>#<?php echo htmlspecialchars($invoice['id']); ?></td>
                                     <td><?php echo htmlspecialchars($invoice['fee_name'] ?? 'General Fee'); ?></td>
-                                    <td><strong>₹<?php echo number_format($invoice['amount'], 2); ?></strong></td>
-                                    <td><?php echo date('M d, Y', strtotime($invoice['due_date'])); ?></td>
+                                    <td><strong>₹<?php echo number_format((float)$invoice['amount'], 2); ?></strong></td>
+                                    <td><?php echo $invoice['due_date'] ? date('M d, Y', strtotime($invoice['due_date'])) : 'N/A'; ?></td>
                                     <td>
                                         <span class="status-badge <?php echo $statusClass; ?>">
                                             <?php echo $isOverdue ? 'OVERDUE' : 'PENDING'; ?>

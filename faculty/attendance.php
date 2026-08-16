@@ -44,7 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['action'])) {
 }
 
 // Fetch faculty courses
-$stmt = $pdo->prepare("SELECT * FROM courses WHERE faculty_id = ? ORDER BY course_name");
+$stmt = $pdo->prepare("SELECT * FROM courses WHERE faculty_id = ? ORDER BY title");
 $stmt->execute([$currentUser['id']]);
 $courses = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -55,7 +55,7 @@ $selectedDate = trim($_GET['date'] ?? date('Y-m-d'));
 // Fetch enrolled students and their attendance
 if ($selectedCourse) {
     $stmt = $pdo->prepare("
-        SELECT DISTINCT u.id, u.name, u.email,
+        SELECT DISTINCT u.id, u.full_name AS name, u.email,
                COALESCE(a.status, '') as attendance_status
         FROM users u
         JOIN course_enrollments ce ON u.id = ce.student_id
@@ -63,7 +63,7 @@ if ($selectedCourse) {
             AND a.course_id = ? 
             AND a.attendance_date = ?
         WHERE ce.course_id = ? AND u.role = 'student'
-        ORDER BY u.name
+        ORDER BY u.full_name
     ");
     $stmt->execute([$selectedCourse, $selectedDate, $selectedCourse]);
     $enrolledStudents = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -267,7 +267,7 @@ while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
                         <option value="">Select Course</option>
                         <?php foreach ($courses as $course): ?>
                             <option value="<?php echo $course['id']; ?>" <?php echo $course['id'] == $selectedCourse ? 'selected' : ''; ?>>
-                                <?php echo htmlspecialchars($course['course_name']); ?>
+                                <?php echo htmlspecialchars($course['title']); ?>
                             </option>
                         <?php endforeach; ?>
                     </select>
