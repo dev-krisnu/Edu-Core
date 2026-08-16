@@ -12,25 +12,27 @@ declare(strict_types=1);
 session_start();
 
 require_once __DIR__ . '/config/database.php';
+require_once __DIR__ . '/config/app.php';
 
 // ---- Already logged in? Skip the gateway. ----
-if (!empty($_SESSION['user_id']) && !empty($_SESSION['role'])) {
-    header('Location: ' . roleDashboardPath($_SESSION['role']));
+if (!empty($_SESSION['user_id']) && !empty($_SESSION['user_role'])) {
+    header('Location: ' . roleDashboardPath($_SESSION['user_role']));
     exit;
 }
 
 function roleDashboardPath(string $role): string
 {
+    // Keys must match the `users.role` ENUM in database/schema.sql exactly.
     $map = [
-        'admin'       => '/admin/dashboard.php',
-        'faculty'     => '/faculty/dashboard.php',
-        'student'     => '/student/dashboard.php',
-        'parent'      => '/parent/dashboard.php',
-        'finance'     => '/finance/dashboard.php',
-        'library'     => '/library/dashboard.php',
-        'placements'  => '/placements/dashboard.php',
+        'super_admin' => 'admin/dashboard.php',
+        'faculty'     => 'faculty/dashboard.php',
+        'student'     => 'student/dashboard.php',
+        'parent'      => 'parent/dashboard.php',
+        'finance'     => 'finance/dashboard.php',
+        'librarian'   => 'library/dashboard.php',
+        'tpo'         => 'placements/dashboard.php',
     ];
-    return $map[$role] ?? '/index.php';
+    return url($map[$role] ?? 'index.php');
 }
 
 // ---- CSRF token ----
@@ -58,7 +60,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         try {
             $pdo = getDbConnection();
             $stmt = $pdo->prepare(
-                'SELECT id, full_name, email, password_hash, role, status
+                'SELECT id, full_name, email, password_hash, role, status, two_factor_enabled
                  FROM users WHERE email = :email LIMIT 1'
             );
             $stmt->execute(['email' => $email]);
@@ -70,9 +72,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $errors[] = 'This account has been suspended. Contact your administrator.';
             } else {
                 session_regenerate_id(true);
+
+                if (!empty($user['two_factor_enabled'])) {
+                    // Password verified, but the account requires a TOTP
+                    // code before the session becomes fully authenticated.
+                    $_SESSION['pending_2fa_user_id'] = $user['id'];
+                    $_SESSION['pending_2fa_role']    = $user['role'];
+                    $_SESSION['pending_2fa_name']    = $user['full_name'];
+                    header('Location: ' . url('2fa.php'));
+                    exit;
+                }
+
                 $_SESSION['user_id']   = $user['id'];
                 $_SESSION['full_name'] = $user['full_name'];
-                $_SESSION['role']      = $user['role'];
+                $_SESSION['user_role'] = $user['role'];
 
                 header('Location: ' . roleDashboardPath($user['role']));
                 exit;
