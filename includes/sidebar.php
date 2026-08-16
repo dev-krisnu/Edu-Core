@@ -142,5 +142,9 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                 <i class="bi bi-chat-dots"></i>
             </button>
         </div>
+        <a href="<?= htmlspecialchars(($portalBase ?? $basePath ?? '..') . '/logout.php', ENT_QUOTES, 'UTF-8') ?>" class="nav-item sidebar-logout">
+            <i class="bi bi-box-arrow-right"></i>
+            <span>Logout</span>
+        </a>
     </div>
 </aside>
