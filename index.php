@@ -107,7 +107,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <link rel="stylesheet" href="style.css">
 <link rel="stylesheet" href="assets/css/login-page.css">
 </head>
-<body class="login-page">
+<body class="login-page" data-portal="student">
 
 <div class="login-bg" aria-hidden="true"></div>
 
@@ -220,15 +220,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <!-- Login -->
     <aside class="login-column">
       <div class="login-card">
-        <h2>Welcome back</h2>
-        <p class="login-sub">Sign in to access your portal</p>
+        <h2 id="loginTitle">Welcome back, Student</h2>
+        <p class="login-sub" id="loginSub">Sign in to your student portal</p>
 
-        <div class="role-toggle" id="roleToggle">
-          <input type="radio" name="role_display" id="role-student" checked>
-          <input type="radio" name="role_display" id="role-faculty">
-          <div class="role-thumb"></div>
-          <label for="role-student">Student</label>
-          <label for="role-faculty">Faculty</label>
+        <p class="role-hint" id="roleHint">
+          <strong>Student portal</strong> — demo: <code>krrishjeswar@educore.edu</code> / password123
+        </p>
+
+        <div class="role-pick" id="rolePick" role="group" aria-label="Choose portal">
+          <button type="button" class="role-pick-btn active" data-role="student" data-email="krrishjeswar@educore.edu" data-label="Student">
+            <i class="bi bi-mortarboard"></i> Student
+          </button>
+          <button type="button" class="role-pick-btn" data-role="faculty" data-email="faculty@educore.edu" data-label="Faculty">
+            <i class="bi bi-person-workspace"></i> Faculty
+          </button>
+          <button type="button" class="role-pick-btn" data-role="admin" data-email="admin@educore.edu" data-label="Admin">
+            <i class="bi bi-shield-lock"></i> Admin
+          </button>
+          <button type="button" class="role-pick-btn" data-role="parent" data-email="parent@educore.edu" data-label="Parent">
+            <i class="bi bi-people"></i> Parent
+          </button>
+          <button type="button" class="role-pick-btn" data-role="finance" data-email="finance@educore.edu" data-label="Finance">
+            <i class="bi bi-cash-stack"></i> Finance
+          </button>
+          <button type="button" class="role-pick-btn" data-role="librarian" data-email="librarian@educore.edu" data-label="Librarian">
+            <i class="bi bi-book"></i> Library
+          </button>
+          <button type="button" class="role-pick-btn" data-role="tpo" data-email="tpo@educore.edu" data-label="TPO">
+            <i class="bi bi-briefcase"></i> TPO
+          </button>
         </div>
 
         <?php foreach ($errors as $err): ?>
@@ -240,7 +260,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
           <div class="field">
             <label for="email">Email address</label>
-            <input type="email" id="email" name="email" placeholder="komalshaw@educore.edu" value="<?= $oldEmail ?>" required autofocus>
+            <input type="email" id="email" name="email" placeholder="krrishjeswar@educore.edu" value="<?= $oldEmail ?>" required autofocus>
           </div>
 
           <div class="field">
@@ -284,6 +304,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </div>
 
 <script>
+const ROLES = {
+  student:   { email: 'krrishjeswar@educore.edu', label: 'Student' },
+  faculty:   { email: 'faculty@educore.edu', label: 'Faculty' },
+  admin:     { email: 'admin@educore.edu', label: 'Admin' },
+  parent:    { email: 'parent@educore.edu', label: 'Parent' },
+  finance:   { email: 'finance@educore.edu', label: 'Finance' },
+  librarian: { email: 'librarian@educore.edu', label: 'Librarian' },
+  tpo:       { email: 'tpo@educore.edu', label: 'TPO' }
+};
+
+const emailInput = document.getElementById('email');
+const loginTitle = document.getElementById('loginTitle');
+const loginSub = document.getElementById('loginSub');
+const roleHint = document.getElementById('roleHint');
+const bodyEl = document.body;
+
+document.querySelectorAll('.role-pick-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const role = btn.dataset.role;
+    const label = btn.dataset.label;
+    const email = btn.dataset.email;
+
+    document.querySelectorAll('.role-pick-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+
+    bodyEl.dataset.portal = role;
+    loginTitle.textContent = `Welcome back, ${label}`;
+    loginSub.textContent = `Sign in to your ${label.toLowerCase()} portal`;
+    roleHint.innerHTML = `<strong>${label} portal</strong> — demo: <code>${email}</code> / password123`;
+
+    if (!emailInput.value || Object.values(ROLES).some(r => r.email === emailInput.value)) {
+      emailInput.value = email;
+    }
+    emailInput.placeholder = email;
+  });
+});
+
 const pwInput = document.getElementById('password');
 const pwToggle = document.getElementById('togglePw');
 pwToggle.addEventListener('click', () => {

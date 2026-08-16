@@ -58,6 +58,10 @@ body {
   overflow-x: hidden;
 }
 
+body.login-page {
+  overflow-y: auto !important;
+}
+
 a { color: inherit; text-decoration: none; }
 button { font-family: inherit; }
 
