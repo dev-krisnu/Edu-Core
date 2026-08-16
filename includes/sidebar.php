@@ -103,6 +103,17 @@ switch ($role) {
         ];
 }
 
+$roleFolder = match ($role) {
+    'super_admin' => 'admin',
+    'faculty'     => 'faculty',
+    'student'     => 'student',
+    'parent'      => 'parent',
+    'finance'     => 'finance',
+    'librarian'   => 'library',
+    'tpo'         => 'placements',
+    default       => 'student',
+};
+
 $currentPage = basename($_SERVER['PHP_SELF']);
 ?>
 <aside class="sidebar" id="sidebar">
@@ -123,7 +134,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
 
     <nav class="sidebar-nav">
         <?php foreach ($navItems as $item): ?>
-        <a href="<?= $item['href'] ?>" class="nav-item <?= $currentPage === $item['href'] ? 'active' : '' ?>"
+        <a href="<?= htmlspecialchars(url($roleFolder . '/' . $item['href'])) ?>" class="nav-item <?= $currentPage === $item['href'] ? 'active' : '' ?>"
            style="--item-color: <?= $item['color'] ?>">
             <i class="bi <?= $item['icon'] ?>"></i>
             <span><?= $item['label'] ?></span>
