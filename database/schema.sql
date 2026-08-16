@@ -21,6 +21,33 @@ CREATE TABLE IF NOT EXISTS users (
     FOREIGN KEY (parent_id) REFERENCES users(id) ON DELETE SET NULL
 );
 
+-- Which students are enrolled in which courses (used for enrollment
+-- counts and attendance rosters).
+CREATE TABLE IF NOT EXISTS course_enrollments (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    course_id INT NOT NULL,
+    student_id INT NOT NULL,
+    enrolled_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uniq_course_student (course_id, student_id),
+    FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE,
+    FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Daily per-student, per-course attendance records.
+CREATE TABLE IF NOT EXISTS attendance (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    student_id INT NOT NULL,
+    course_id INT NOT NULL,
+    attendance_date DATE NOT NULL,
+    status ENUM('present','absent','late','excused') DEFAULT 'present',
+    marked_by INT DEFAULT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uniq_student_course_date (student_id, course_id, attendance_date),
+    FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE,
+    FOREIGN KEY (marked_by) REFERENCES users(id) ON DELETE SET NULL
+);
+
 CREATE TABLE IF NOT EXISTS notices (
     id INT AUTO_INCREMENT PRIMARY KEY,
     title VARCHAR(200) NOT NULL,
@@ -38,6 +65,7 @@ CREATE TABLE IF NOT EXISTS courses (
     title VARCHAR(200) NOT NULL,
     department VARCHAR(100),
     credits INT DEFAULT 3,
+    semester INT DEFAULT NULL,
     faculty_id INT,
     FOREIGN KEY (faculty_id) REFERENCES users(id) ON DELETE SET NULL
 );
@@ -59,14 +87,20 @@ CREATE TABLE IF NOT EXISTS exams (
 
 CREATE TABLE IF NOT EXISTS exam_questions (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    exam_id INT NOT NULL,
+    exam_id INT DEFAULT NULL,
+    course_id INT DEFAULT NULL,
+    created_by INT DEFAULT NULL,
     question_text TEXT NOT NULL,
     question_type ENUM('mcq','short','code','essay') DEFAULT 'mcq',
+    difficulty ENUM('easy','medium','hard') DEFAULT 'medium',
     options JSON,
     correct_answer TEXT,
     marks INT DEFAULT 5,
     bloom_level VARCHAR(30),
-    FOREIGN KEY (exam_id) REFERENCES exams(id) ON DELETE CASCADE
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (exam_id) REFERENCES exams(id) ON DELETE CASCADE,
+    FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE SET NULL,
+    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
 );
 
 -- Per-student exam attempts/results. `exams` only stores the exam
@@ -128,6 +162,16 @@ CREATE TABLE IF NOT EXISTS library_circulation (
     returned_at DATETIME NULL,
     fine_amount DECIMAL(8,2) DEFAULT 0,
     FOREIGN KEY (book_id) REFERENCES library_books(id) ON DELETE CASCADE,
+    FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Uploaded student resumes for the placements/TPO module.
+CREATE TABLE IF NOT EXISTS student_resumes (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    student_id INT NOT NULL UNIQUE,
+    file_path VARCHAR(255) NOT NULL,
+    file_size INT DEFAULT 0,
+    uploaded_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
