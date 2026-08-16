@@ -25,8 +25,8 @@ class GeminiAI
         $this->maxTokens = AI_MAX_TOKENS;
         $this->temperature = AI_TEMPERATURE;
 
-        if (empty($this->apiKey) || $this->apiKey === '') {
-            throw new Exception('Gemini API key not configured. Set GEMINI_API_KEY in .env');
+        if (empty($this->apiKey) || $this->apiKey === 'your_gemini_api_key_here') {
+            $this->apiKey = '';
         }
     }
 
@@ -190,6 +190,18 @@ Keep response under 250 words.";
      */
     private function callAPI(string $prompt): string
     {
+        if ($this->apiKey === '') {
+            return 'Configure GEMINI_API_KEY in .env for live AI responses.';
+        }
+
+        require_once __DIR__ . '/AICache.php';
+        $cached = AICache::get($prompt);
+        if ($cached !== null) {
+            return $cached;
+        }
+
+        $prompt = substr($prompt, 0, 1800);
+
         $payload = [
             'contents' => [
                 [
@@ -235,7 +247,9 @@ Keep response under 250 words.";
             return "Error: Invalid response format from AI";
         }
 
-        return $data['candidates'][0]['content']['parts'][0]['text'];
+        $text = $data['candidates'][0]['content']['parts'][0]['text'];
+        AICache::set($prompt, $text);
+        return $text;
     }
 
     /**
@@ -311,13 +325,44 @@ class OllamaAI
  */
 class AIFactory
 {
-    public static function create(): GeminiAI|OllamaAI
+    public static function create(): GeminiAI|OllamaAI|DemoAI
     {
         $provider = env('AI_PROVIDER', 'gemini');
 
-        return match($provider) {
-            'ollama' => new OllamaAI(),
-            default => new GeminiAI()
-        };
+        if ($provider === 'ollama') {
+            return new OllamaAI();
+        }
+        if (!empty(GEMINI_API_KEY) && GEMINI_API_KEY !== 'your_gemini_api_key_here') {
+            return new GeminiAI();
+        }
+        return new DemoAI();
+    }
+}
+
+/** Offline fallback when no API key is set */
+class DemoAI
+{
+    public function generateQuestions(string $topic, int $count = 5, string $difficulty = 'medium'): array
+    {
+        $out = [];
+        for ($i = 1; $i <= min($count, 5); $i++) {
+            $out[] = [
+                'question_text' => "({$difficulty}) Explain a key concept of {$topic} — question {$i}.",
+                'options' => ['A' => 'Option A', 'B' => 'Option B', 'C' => 'Option C', 'D' => 'Option D'],
+                'correct_answer' => 'A',
+                'explanation' => 'Demo question — add GEMINI_API_KEY for AI-generated content.',
+            ];
+        }
+        return $out;
+    }
+
+    public function tutorResponse(string $topic, string $question, string $userRole = 'student'): string
+    {
+        return "Demo tutor: For \"{$question}\" in {$topic}, review your notes and textbook chapter. Set GEMINI_API_KEY in .env for live tutoring.";
+    }
+
+    public function helpdeskResponse(string $question, string $userRole = 'student'): string
+    {
+        return 'EduCore demo helpdesk: visit your role dashboard for courses, exams, fees, and library. Configure Gemini API for smart answers.';
     }
 }

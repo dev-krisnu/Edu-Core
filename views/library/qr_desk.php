@@ -33,7 +33,7 @@ include __DIR__ . '/../../includes/header.php';
         <div class="content-card fade-in mt-4">
             <div class="content-card-header"><h3>Quick Reference — Demo QR Codes</h3></div>
             <div class="d-flex gap-3 flex-wrap">
-                <?php foreach (['QR-EJ-001','QR-CC-002','QR-IA-003','QR-C-004'] as $qr): ?>
+                <?php foreach (['QR-CS101-01','QR-CS202-01','QR-EC101-01','QR-MA101-01'] as $qr): ?>
                 <button class="btn btn-outline-secondary btn-sm" onclick="document.getElementById('qrInput').value='<?= $qr ?>';scanAction('lookup')"><?= $qr ?></button>
                 <?php endforeach; ?>
             </div>

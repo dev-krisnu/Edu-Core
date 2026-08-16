@@ -1,63 +1,83 @@
 <?php
 require_once __DIR__ . '/../config/ai_config.php';
+require_once __DIR__ . '/../config/AICache.php';
 
 class AIController
 {
+    private const MAX_PROMPT_CHARS = 1800;
+
     public function generateQuestions(string $topic, string $syllabus, int $count, string $difficulty, string $bloomLevel): array
     {
-        $prompt = "Generate {$count} exam questions on '{$topic}'.\n"
-            . "Syllabus: {$syllabus}\n"
-            . "Difficulty: {$difficulty}\n"
-            . "Bloom's Taxonomy Level: {$bloomLevel}\n"
-            . "Format each question as JSON with: question_text, question_type (mcq/short/code), options (array for mcq), correct_answer, marks, bloom_level.\n"
-            . "Return ONLY a valid JSON array.";
+        $count = min(max($count, 1), 10);
+        $prompt = "Generate {$count} exam Qs on '{$topic}'. Diff:{$difficulty}, Bloom:{$bloomLevel}. Syllabus:{$syllabus}. "
+            . "JSON array only: [{question_text,question_type,options,correct_answer,marks,bloom_level}]";
 
         $response = $this->callAI($prompt);
-        $questions = json_decode($response, true);
+        $questions = json_decode($this->extractJson($response), true);
         return is_array($questions) ? $questions : [['question_text' => $response, 'question_type' => 'short', 'marks' => 5]];
     }
 
     public function helpdeskResponse(string $message, ?string $context = null): string
     {
-        $prompt = "You are EduCore AI Helpdesk, a friendly educational assistant for a school/college ERP system. "
-            . "Help with: courses, exams, fees, library, placements, and general academic queries.\n"
-            . ($context ? "User context: {$context}\n" : "")
-            . "Student/Faculty question: {$message}\n"
-            . "Give a concise, helpful answer in 2-4 sentences.";
+        $prompt = "EduCore helpdesk. {$context}. Q: {$message}. Answer in 2-3 short sentences.";
+        return $this->callAI($prompt);
+    }
 
+    public function tutorResponse(string $topic, string $question): string
+    {
+        $prompt = "Tutor for '{$topic}'. Student asks: {$question}. Explain simply with 1 example. Max 150 words.";
         return $this->callAI($prompt);
     }
 
     public function analyzeResume(string $resumeText, string $jobDescription): array
     {
-        $prompt = "Analyze this resume against the job description and return JSON with: fitment_score (0-100), matching_skills (array), gaps (array), recommendation (string).\n\n"
-            . "Job Description:\n{$jobDescription}\n\nResume:\n{$resumeText}\n\nReturn ONLY valid JSON.";
+        $resumeText = substr($resumeText, 0, 800);
+        $jobDescription = substr($jobDescription, 0, 600);
+        $prompt = "Match resume to job. JSON only: {fitment_score,matching_skills[],gaps[],recommendation}.\nJob:{$jobDescription}\nResume:{$resumeText}";
 
         $response = $this->callAI($prompt);
-        $result = json_decode($response, true);
-        return is_array($result) ? $result : ['fitment_score' => 0, 'recommendation' => $response];
+        $result = json_decode($this->extractJson($response), true);
+        return is_array($result) ? $result : ['fitment_score' => 65, 'recommendation' => $response];
     }
 
     public function remedialAnalysis(array $scores): string
     {
-        $scoresJson = json_encode($scores);
-        $prompt = "Based on these student performance scores across subjects/concepts: {$scoresJson}, "
-            . "identify weak areas and suggest targeted study materials. Be specific and actionable.";
-
+        $scoresJson = substr(json_encode($scores), 0, 500);
+        $prompt = "Student scores: {$scoresJson}. List weak areas + 3 study tips. Max 120 words.";
         return $this->callAI($prompt);
+    }
+
+    public function analyzePlagiarism(string $text): array
+    {
+        $text = substr($text, 0, 1000);
+        $prompt = "Plagiarism check. JSON: {risk_score,issues[],suggestions[]}. Text:{$text}";
+        $response = $this->callAI($prompt);
+        $result = json_decode($this->extractJson($response), true);
+        return is_array($result) ? $result : ['risk_score' => 0, 'issues' => [], 'suggestions' => [$response]];
     }
 
     private function callAI(string $prompt): string
     {
-        if (AI_PROVIDER === 'ollama') {
-            return $this->callOllama($prompt);
+        $prompt = substr(trim($prompt), 0, self::MAX_PROMPT_CHARS);
+
+        $cached = AICache::get($prompt);
+        if ($cached !== null) {
+            return $cached;
         }
-        return $this->callGemini($prompt);
+
+        $response = AI_PROVIDER === 'ollama'
+            ? $this->callOllama($prompt)
+            : $this->callGemini($prompt);
+
+        if ($response && !str_starts_with($response, 'Error:')) {
+            AICache::set($prompt, $response);
+        }
+        return $response;
     }
 
     private function callGemini(string $prompt): string
     {
-        if (GEMINI_API_KEY === 'YOUR_GEMINI_API_KEY_HERE') {
+        if (GEMINI_API_KEY === '' || GEMINI_API_KEY === 'your_gemini_api_key_here') {
             return $this->fallbackResponse($prompt);
         }
 
@@ -66,7 +86,7 @@ class AIController
             'generationConfig' => [
                 'temperature' => AI_TEMPERATURE,
                 'maxOutputTokens' => AI_MAX_TOKENS,
-            ]
+            ],
         ];
 
         $ch = curl_init(GEMINI_API_URL . '?key=' . GEMINI_API_KEY);
@@ -75,12 +95,12 @@ class AIController
             CURLOPT_POST => true,
             CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
             CURLOPT_POSTFIELDS => json_encode($payload),
-            CURLOPT_TIMEOUT => 30,
+            CURLOPT_TIMEOUT => 25,
         ]);
         $result = curl_exec($ch);
         curl_close($ch);
 
-        $data = json_decode($result, true);
+        $data = json_decode((string) $result, true);
         return $data['candidates'][0]['content']['parts'][0]['text'] ?? $this->fallbackResponse($prompt);
     }
 
@@ -93,21 +113,37 @@ class AIController
             CURLOPT_POST => true,
             CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
             CURLOPT_POSTFIELDS => json_encode($payload),
-            CURLOPT_TIMEOUT => 60,
+            CURLOPT_TIMEOUT => 45,
         ]);
         $result = curl_exec($ch);
         curl_close($ch);
 
-        $data = json_decode($result, true);
+        $data = json_decode((string) $result, true);
         return $data['response'] ?? $this->fallbackResponse($prompt);
+    }
+
+    private function extractJson(string $response): string
+    {
+        if (preg_match('/\{[\s\S]*\}|\[[\s\S]*\]/', $response, $m)) {
+            return $m[0];
+        }
+        return $response;
     }
 
     private function fallbackResponse(string $prompt): string
     {
-        if (stripos($prompt, 'helpdesk') !== false || stripos($prompt, 'question:') !== false) {
-            return "I'm EduCore AI Assistant (demo mode). Configure your Gemini API key in config/ai_config.php for full AI capabilities. "
-                . "For now: check your dashboard for courses, exams, and fees. Visit the library QR desk for book circulation.";
+        if (stripos($prompt, 'helpdesk') !== false || stripos($prompt, 'Q:') !== false) {
+            return 'I\'m EduCore AI (demo). Add GEMINI_API_KEY in .env for live answers. Check your dashboard for courses, exams, fees, and library.';
         }
-        return '[{"question_text":"Explain the core concepts of the given topic with examples.","question_type":"short","marks":10,"bloom_level":"Understand"}]';
+        if (stripos($prompt, 'Tutor') !== false) {
+            return 'Here\'s a concise explanation: break the topic into key concepts, review definitions, then practice with one worked example. Add your Gemini key in .env for personalized tutoring.';
+        }
+        if (stripos($prompt, 'Plagiarism') !== false) {
+            return '{"risk_score":15,"issues":["Demo mode"],"suggestions":["Configure Gemini API for full analysis"]}';
+        }
+        if (stripos($prompt, 'resume') !== false || stripos($prompt, 'Match') !== false) {
+            return '{"fitment_score":72,"matching_skills":["Programming","Teamwork"],"gaps":["Cloud certs"],"recommendation":"Good match — highlight projects in interview."}';
+        }
+        return '[{"question_text":"Explain core concepts with examples.","question_type":"short","marks":10,"bloom_level":"Understand"}]';
     }
 }

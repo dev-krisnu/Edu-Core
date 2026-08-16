@@ -18,5 +18,6 @@ define('GEMINI_API_URL', 'https://generativelanguage.googleapis.com/v1beta/model
 define('OLLAMA_URL', 'http://localhost:11434/api/generate');
 define('OLLAMA_MODEL', 'llama3.2');
 
-define('AI_MAX_TOKENS', 2048);
-define('AI_TEMPERATURE', 0.7);
+define('AI_MAX_TOKENS', (int) env('AI_MAX_TOKENS', 512));
+define('AI_TEMPERATURE', (float) env('AI_TEMPERATURE', 0.5));
+define('AI_CACHE_TTL', (int) env('AI_CACHE_TTL', 3600));

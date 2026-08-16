@@ -18,9 +18,9 @@ $currentUser = getCurrentUser();
 try {
     $statsQueries = [
         'total_courses' => 'SELECT COUNT(*) as count FROM courses WHERE faculty_id = ?',
-        'total_students' => 'SELECT COUNT(DISTINCT student_id) as count FROM exams WHERE course_id IN (SELECT id FROM courses WHERE faculty_id = ?)',
-        'pending_grading' => 'SELECT COUNT(*) as count FROM exams WHERE status = "submitted" AND course_id IN (SELECT id FROM courses WHERE faculty_id = ?)',
-        'recent_courses' => 'SELECT * FROM courses WHERE faculty_id = ? ORDER BY created_at DESC LIMIT 5'
+        'total_students' => 'SELECT COUNT(*) as count FROM users WHERE role = "student"',
+        'pending_grading' => 'SELECT COUNT(*) as count FROM exams WHERE status = "completed" AND course_id IN (SELECT id FROM courses WHERE faculty_id = ?)',
+        'recent_courses' => 'SELECT * FROM courses WHERE faculty_id = ? ORDER BY id DESC LIMIT 5'
     ];
 
     $stats = [];
@@ -30,8 +30,7 @@ try {
     $coursesStmt->execute([$userId]);
     $stats['total_courses'] = $coursesStmt->fetch()['count'] ?? 0;
 
-    $studentsStmt = $pdo->prepare($statsQueries['total_students']);
-    $studentsStmt->execute([$userId]);
+    $studentsStmt = $pdo->query($statsQueries['total_students']);
     $stats['total_students'] = $studentsStmt->fetch()['count'] ?? 0;
 
     $gradingStmt = $pdo->prepare($statsQueries['pending_grading']);

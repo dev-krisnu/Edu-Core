@@ -149,6 +149,7 @@ CREATE TABLE IF NOT EXISTS system_logs (
 -- Demo users (password: password123 for all)
 INSERT INTO users (full_name, email, password_hash, role, phone) VALUES
 ('Super Admin', 'admin@educore.edu', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'super_admin', '948836388'),
+('Faculty Demo', 'faculty@educore.edu', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'faculty', '9000000001'),
 ('Mr. Lakhan Mahato', 'lakhanmahato@educore.edu', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'faculty', '6295939450'),
 ('Krrish Jeswar', 'krrishjeswar@educore.edu', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'student', '9679469493'),
 ('Manish Kumar Chowdhury', 'manishkumarchowdhury@educore.edu', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'student', '8327657732'),
@@ -157,7 +158,8 @@ INSERT INTO users (full_name, email, password_hash, role, phone) VALUES
 ('Surjo Kanto Maji', 'surjokantomaji@educore.edu', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'student', '7876500012'),
 ('Finance Officer', 'finance@educore.edu', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'finance', '4956936438'),
 ('Library Manager', 'librarian@educore.edu', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'librarian', '0688659608'),
-('TPO Head', 'tpo@educore.edu', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'tpo', '9876543215');
+('TPO Head', 'tpo@educore.edu', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'tpo', '9876543215'),
+('Parent Demo', 'parent@educore.edu', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'parent', '9000000002');
 
 INSERT INTO notices (title, content, posted_by, priority) VALUES
 ('Welcome to EduCore 2026', 'Unified AI-Powered ERP & LMS is now live. Explore AI Tutor, Proctored Exams, and QR Library!', 1, 'high'),

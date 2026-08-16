@@ -61,7 +61,7 @@ Place in your XAMPP `htdocs` folder.
 
 ### 4. Configure
 - **Database:** Edit `config/database.php` if your MySQL credentials differ
-- **AI (optional):** Add your Gemini API key in `config/ai_config.php`
+- **AI (optional):** Copy `.env.example` to `.env` and add your Gemini API key
 - **Base URL:** Update `BASE_URL` in `config/app.php` to match your local path
 
 ### 5. Run
@@ -76,7 +76,8 @@ http://localhost/Ardent Internship 2026/Ardent PHP Internship 2026 Final Project
 |------|-------|----------|
 | Super Admin | admin@educore.edu | password123 |
 | Faculty | faculty@educore.edu | password123 |
-| Student | student@educore.edu | password123 |
+| Student | krrishjeswar@educore.edu | password123 |
+| Parent | parent@educore.edu | password123 |
 | Finance | finance@educore.edu | password123 |
 | Librarian | librarian@educore.edu | password123 |
 | TPO | tpo@educore.edu | password123 |

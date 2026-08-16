@@ -42,6 +42,16 @@ if (empty($_SESSION['csrf_token'])) {
 
 $errors    = [];
 $oldEmail  = '';
+$notices   = [];
+
+// Load public notices for the login page sidebar
+try {
+    $pdoNotices = getDbConnection();
+    $nStmt = $pdoNotices->query('SELECT title FROM notices WHERE is_public = 1 ORDER BY created_at DESC LIMIT 5');
+    $notices = $nStmt->fetchAll() ?: [];
+} catch (Throwable $e) {
+    $notices = [];
+}
 
 // ---- Handle login submission ----
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -97,31 +107,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// ---- Notices for the board (fails gracefully if the table isn't set up yet) ----
-$notices = [];
-try {
-    $pdo = getDbConnection();
-    $stmt = $pdo->query(
-        "SELECT title FROM notices WHERE is_public = 1
-         ORDER BY created_at DESC LIMIT 4"
-    );
-    $notices = $stmt ? $stmt->fetchAll() : [];
-} catch (Throwable $e) {
-    $notices = [];
-}
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>EduCore Login · Dr. B.C. Roy Engineering College</title>
+<title>EduCore Login | Dr. B.C. Roy Engineering College</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="assets/css/themes.css">
 </head>
-<body>
+<body data-role="student">
 
 <div class="aurora-bg">
   <div class="aurora-blob b1"></div>
@@ -174,7 +173,7 @@ try {
               <div class="id-badge-qr"></div>
             </div>
             <div>
-              <div class="id-badge-name">Campus Access Card</div>
+              <div class="id-badge-name">Campus Access Card </div>
               <div class="id-badge-id">DBCREC · SCAN TO VERIFY</div>
             </div>
           </div>

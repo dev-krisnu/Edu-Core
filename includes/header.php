@@ -2,6 +2,8 @@
 $user = getCurrentUser();
 $pageTitle = $pageTitle ?? 'EduCore';
 $basePath = $basePath ?? '../..';
+require_once __DIR__ . '/role_theme.php';
+$roleTheme = getRoleThemeKey($user['role'] ?? 'student');
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -13,9 +15,10 @@ $basePath = $basePath ?? '../..';
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="<?= $basePath ?>/assets/css/educore.css" rel="stylesheet">
+    <link href="<?= $basePath ?>/assets/css/themes.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
-<body class="educore-body">
+<body class="educore-body theme-<?= htmlspecialchars($roleTheme) ?>" data-role="<?= htmlspecialchars($roleTheme) ?>">
 <div class="app-wrapper">
     <?php include __DIR__ . '/sidebar.php'; ?>
     <div class="main-content">

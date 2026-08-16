@@ -26,20 +26,19 @@ try {
 
     // Get upcoming exams
     $examsStmt = $pdo->prepare('
-        SELECT e.*, c.course_name 
+        SELECT e.*, c.title AS course_title 
         FROM exams e 
         JOIN courses c ON e.course_id = c.id 
-        WHERE e.exam_date >= CURDATE() 
-        ORDER BY e.exam_date ASC 
+        WHERE e.start_time >= CURDATE() 
+        ORDER BY e.start_time ASC 
         LIMIT 5
     ');
     $examsStmt->execute();
     $upcomingExams = $examsStmt->fetchAll();
 
-    // Get recent notices
     $noticesStmt = $pdo->prepare('
         SELECT * FROM notices 
-        WHERE status = "active" 
+        WHERE is_public = 1 
         ORDER BY created_at DESC 
         LIMIT 5
     ');
