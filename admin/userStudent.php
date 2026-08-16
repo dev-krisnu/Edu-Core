@@ -10,18 +10,37 @@ require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../includes/auth_check.php';
 
 requireLogin();
-requireRole(['admin']);
+requireRole(['super_admin']);
 
-$currentUser = getCurrentUser();
+$user = getCurrentUser();
 $pdo = getDbConnection();
-$filter_role = trim($_GET['role'] ?? '');
 
-// Fetch users with filter
-$sql = "SELECT * FROM users WHERE role != 'super_admin'";
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+
+$flash = '';
+
+// Handle status toggle (active <-> suspended)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'toggle_status') {
+    if (hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'] ?? '')) {
+        $targetId = (int)($_POST['user_id'] ?? 0);
+        $newStatus = ($_POST['new_status'] ?? '') === 'active' ? 'active' : 'suspended';
+        $upd = $pdo->prepare("UPDATE users SET status = ? WHERE id = ? AND role = 'student'");
+        $upd->execute([$newStatus, $targetId]);
+        logAction("Set student #{$targetId} status to {$newStatus}", 'admin');
+        $flash = 'Student status updated.';
+    }
+}
+
+$filter_status = trim($_GET['status'] ?? '');
+
+// Fetch students only — faculty/parents are managed on their own pages.
+$sql = "SELECT * FROM users WHERE role = 'student'";
 $params = [];
-if ($filter_role) {
-    $sql .= " AND role = ?";
-    $params[] = $filter_role;
+if ($filter_status) {
+    $sql .= " AND status = ?";
+    $params[] = $filter_status;
 }
 $sql .= " ORDER BY created_at DESC LIMIT 50";
 
@@ -29,11 +48,11 @@ $stmt = $pdo->prepare($sql);
 $stmt->execute($params);
 $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// Count by role
-$stmt = $pdo->query("SELECT role, COUNT(*) as count FROM users WHERE role != 'super_admin' GROUP BY role");
+// Count by status
+$stmt = $pdo->query("SELECT status, COUNT(*) as count FROM users WHERE role = 'student' GROUP BY status");
 $roleCounts = [];
 while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-    $roleCounts[$row['role']] = $row['count'];
+    $roleCounts[$row['status']] = $row['count'];
 }
 ?>
 <!DOCTYPE html>
@@ -41,7 +60,7 @@ while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>User Management - EduCore</title>
+    <title>Student Accounts - EduCore</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="../assets/css/educore.css" rel="stylesheet">
@@ -252,42 +271,46 @@ while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
             <div class="admin-container">
                 <!-- Header -->
                 <div style="margin-bottom: 30px;">
-                    <h1 class="h-display" style="margin: 0 0 8px 0;">User Management</h1>
-                    <p style="color: rgba(255, 255, 255, 0.6); margin: 0;">Manage all system users and their roles</p>
+                    <h1 class="h-display" style="margin: 0 0 8px 0;">Student Accounts</h1>
+                    <p style="color: rgba(255, 255, 255, 0.6); margin: 0;">Manage all registered student accounts</p>
                 </div>
+
+                <?php if ($flash): ?>
+                    <div class="alert alert-success" style="margin-bottom:20px;"><?= htmlspecialchars($flash, ENT_QUOTES, 'UTF-8') ?></div>
+                <?php endif; ?>
 
                 <!-- Stats -->
                 <div class="stats-grid">
                     <div class="stat-card">
                         <div class="stat-value"><?php echo count($users); ?></div>
-                        <div class="stat-label">Total Users</div>
+                        <div class="stat-label">Shown</div>
                     </div>
-                    <?php foreach ($roleCounts as $role => $count): ?>
+                    <?php foreach ($roleCounts as $statusName => $count): ?>
                         <div class="stat-card">
                             <div class="stat-value"><?php echo $count; ?></div>
-                            <div class="stat-label"><?php echo ucfirst($role); ?></div>
+                            <div class="stat-label"><?php echo ucfirst($statusName); ?></div>
                         </div>
                     <?php endforeach; ?>
                 </div>
 
                 <!-- Filter Bar -->
                 <h2 class="section-title">
-                    <i class="bi bi-funnel"></i> Filter by Role
+                    <i class="bi bi-funnel"></i> Filter by Status
                 </h2>
                 <div class="filter-bar">
-                    <a href="?role=" class="filter-btn <?php echo !$filter_role ? 'active' : ''; ?>">
-                        All Users
+                    <a href="?status=" class="filter-btn <?php echo !$filter_status ? 'active' : ''; ?>">
+                        All Students
                     </a>
-                    <?php foreach (array_keys($roleCounts) as $role): ?>
-                        <a href="?role=<?php echo urlencode($role); ?>" class="filter-btn <?php echo $filter_role === $role ? 'active' : ''; ?>">
-                            <?php echo ucfirst($role); ?>
+                    <?php foreach (array_keys($roleCounts) as $statusName): ?>
+                        <a href="?status=<?php echo urlencode($statusName); ?>" class="filter-btn <?php echo $filter_status === $statusName ? 'active' : ''; ?>">
+                            <?php echo ucfirst($statusName); ?>
                         </a>
                     <?php endforeach; ?>
                 </div>
 
                 <!-- Users Table -->
                 <h2 class="section-title">
-                    <i class="bi bi-people"></i> Users (<?php echo count($users); ?>)
+                    <i class="bi bi-people"></i> Students (<?php echo count($users); ?>)
                 </h2>
 
                 <?php if (count($users) > 0): ?>
@@ -296,38 +319,39 @@ while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
                             <tr>
                                 <th>Name</th>
                                 <th>Email</th>
-                                <th>Role</th>
+                                <th>Phone</th>
                                 <th>Status</th>
                                 <th>Joined</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <?php foreach ($users as $user): 
-                                $joinedDate = new DateTime($user['created_at']);
+                            <?php foreach ($users as $student):
+                                $joinedDate = new DateTime($student['created_at']);
+                                $isActive = $student['status'] === 'active';
                             ?>
                                 <tr>
-                                    <td><strong><?php echo htmlspecialchars($user['name']); ?></strong></td>
-                                    <td><?php echo htmlspecialchars($user['email']); ?></td>
+                                    <td><strong><?php echo htmlspecialchars($student['full_name']); ?></strong></td>
+                                    <td><?php echo htmlspecialchars($student['email']); ?></td>
+                                    <td><?php echo htmlspecialchars($student['phone'] ?? '—'); ?></td>
                                     <td>
-                                        <span class="role-badge role-<?php echo strtolower($user['role']); ?>">
-                                            <?php echo $user['role']; ?>
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <span class="status-<?php echo rand(0, 1) ? 'active' : 'inactive'; ?>">
+                                        <span class="status-<?php echo $isActive ? 'active' : 'inactive'; ?>">
                                             <i class="bi bi-circle-fill"></i>
-                                            <?php echo rand(0, 1) ? 'Active' : 'Inactive'; ?>
+                                            <?php echo ucfirst($student['status']); ?>
                                         </span>
                                     </td>
                                     <td><?php echo $joinedDate->format('M d, Y'); ?></td>
                                     <td>
-                                        <button class="action-btn edit" onclick="alert('Edit user: ' + '<?php echo addslashes($user['name']); ?>')">
-                                            <i class="bi bi-pencil"></i> Edit
-                                        </button>
-                                        <button class="action-btn" onclick="alert('Delete user: ' + '<?php echo addslashes($user['name']); ?>')">
-                                            <i class="bi bi-trash"></i> Delete
-                                        </button>
+                                        <form method="POST" style="display:inline;" onsubmit="return confirm('<?php echo $isActive ? 'Suspend' : 'Reactivate'; ?> this student account?');">
+                                            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8') ?>">
+                                            <input type="hidden" name="action" value="toggle_status">
+                                            <input type="hidden" name="user_id" value="<?php echo (int)$student['id']; ?>">
+                                            <input type="hidden" name="new_status" value="<?php echo $isActive ? 'suspended' : 'active'; ?>">
+                                            <button type="submit" class="action-btn <?php echo $isActive ? '' : 'edit'; ?>">
+                                                <i class="bi bi-<?php echo $isActive ? 'slash-circle' : 'check-circle'; ?>"></i>
+                                                <?php echo $isActive ? 'Suspend' : 'Reactivate'; ?>
+                                            </button>
+                                        </form>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
@@ -336,7 +360,7 @@ while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
                 <?php else: ?>
                     <div style="text-align: center; padding: 40px; background: rgba(239, 68, 68, 0.05); border-radius: 12px; color: rgba(245, 244, 255, 0.6);">
                         <i class="bi bi-inbox" style="font-size: 2rem; margin-bottom: 10px;"></i>
-                        <p>No users found matching the selected filter.</p>
+                        <p>No students found matching the selected filter.</p>
                     </div>
                 <?php endif; ?>
             </div>
