@@ -1,4 +1,4 @@
-# EduCore — Unified AI-Powered Educational ERP & LMS
+# EduCore - Unified AI-Powered Educational ERP & LMS
 
 **EduCore** is an enterprise-grade, modular Web ERP/LMS designed for modern schools, colleges, and training institutes. It unifies institutional administration, proctored examinations, AI-driven question setting, result analytics, anti-plagiarism checking, automated financial operations, QR-code library management, and 24/7 AI student/faculty helpdesks into a single platform.
 
@@ -10,41 +10,41 @@
 ## Features
 
 ### AI Engine & Academics
-- **AI Question Setter** — Automated exam generation using Bloom's Taxonomy
-- **Proctored Online Terminal** — Tab-switch detection & auto-grading
-- **Plagiarism Inspector** — Code AST matching, text similarity & AI detection
-- **AI Remedial Analytics** — Performance radar with targeted study materials
-- **24/7 AI Helpdesk** — Context-aware virtual assistant
+- **AI Question Setter** : Automated exam generation using Bloom's Taxonomy
+- **Proctored Online Terminal** : Tab-switch detection & auto-grading
+- **Plagiarism Inspector** : Code AST matching, text similarity & AI detection
+- **AI Remedial Analytics** : Performance radar with targeted study materials
+- **24/7 AI Helpdesk** : Context-aware virtual assistant
 
 ### Administration & Infrastructure
-- **Executive Command Center** — Real-time campus metrics & system logs
-- **Role-Based Access Control** — Super Admin, Faculty, Student, Finance, Librarian, TPO
+- **Executive Command Center** : Real-time campus metrics & system logs
+- **Role-Based Access Control** : Super Admin, Faculty, Student, Finance, Librarian, TPO (Placement Officer)
 
 ### Finance & Fee Operations
-- **Dynamic Fee Engine** — Customizable templates with penalty rules
-- **Financial Dashboard** — Invoicing, ledger & collection analytics
+- **Dynamic Fee Engine** : Customizable templates with penalty rules
+- **Financial Dashboard** : Invoicing, ledger & collection analytics
 
 ### QR Library & Facilities
-- **QR Circulation Desk** — Sub-second book issue/return
-- **Book Catalog** — ISBN metadata & shelf management
+- **QR Circulation Desk** : Sub-second book issue/return
+- **Book Catalog** : ISBN metadata & shelf management
 
 ### Internship & Placement Management
-- **Placement Drive Portal** — Company registration & eligibility filtering
-- **AI Resume Matcher** — Automated fitment scoring against job descriptions
+- **Placement Drive Portal** : Company registration & eligibility filtering
+- **AI Resume Matcher** : Automated fitment scoring against job descriptions
 
 ## Tech Stack
 
 | Layer | Technology |
-|-------|-----------|
-| Backend | PHP 8.x (Modular MVC) |
-| Database | MySQL / MariaDB (PDO) |
+
+| Backend  | PHP 8.0 (Modular MVC)              |
+| Database | MySQL / MariaDB (PDO) (via XAMPP)  |
 | Frontend | HTML5, CSS3, Bootstrap 5, Chart.js |
-| AI | Google Gemini API / Ollama (local) |
+| AI       | Google Gemini API ( also Ollama )  |
 
 ## Quick Start
 
 ### 1. Prerequisites
-- XAMPP (Apache + MySQL + PHP 8.x)
+- XAMPP (Apache + MySQL + PHP 8.0)
 - Git
 
 ### 2. Clone & Setup
@@ -56,7 +56,7 @@ Place in your XAMPP `htdocs` folder.
 
 ### 3. Database Setup
 1. Start Apache & MySQL in XAMPP
-2. Open phpMyAdmin → Import `database/schema.sql`
+2. Open phpMyAdmin -> Import `database/schema.sql`
 3. This creates the `educore` database with demo data
 
 ### 4. Configure
@@ -67,20 +67,20 @@ Place in your XAMPP `htdocs` folder.
 ### 5. Run
 Open in browser:
 ```
-http://localhost/Ardent Internship 2026/Ardent PHP Internship 2026 Final Project/
+http://localhost/folder-name/Edu-Core/
 ```
 
 ## Demo Accounts
 
-| Role | Email | Password |
-|------|-------|----------|
-| Super Admin | admin@educore.edu | password123 |
-| Faculty | faculty@educore.edu | password123 |
-| Student | krrishjeswar@educore.edu | password123 |
-| Parent | parent@educore.edu | password123 |
-| Finance | finance@educore.edu | password123 |
-| Librarian | librarian@educore.edu | password123 |
-| TPO | tpo@educore.edu | password123 |
+| Role        | Email                    | Password |
+
+| Super Admin | admin@educore.edu        | password |
+| Faculty     | faculty@educore.edu      | password |
+| Student     | krrishjeswar@educore.edu | password |
+| Parent      | parent@educore.edu       | password |
+| Finance     | finance@educore.edu      | password |
+| Librarian   | librarian@educore.edu    | password |
+| TPO         | tpo@educore.edu          | password |
 
 ## Project Structure
 
@@ -107,11 +107,11 @@ educore/
 
 EduCore supports two AI providers (configured in `config/ai_config.php`):
 
-1. **Google Gemini** (recommended, free tier) — Set `GEMINI_API_KEY`
-2. **Ollama** (local, offline) — Set `AI_PROVIDER` to `'ollama'` and run Ollama locally
+1. **Google Gemini** (recommended, free tier) : Set `GEMINI_API_KEY`
+2. **Ollama** (local, offline) : Set `AI_PROVIDER` to `'ollama'` and run Ollama locally
 
 Without an API key, the system runs in **demo mode** with intelligent fallback responses.
 
 ## License
 
-Built as part of the Ardent PHP Internship 2026 Final Project.
+Built by Krrish Jeswar ( krisnu.dev ).
