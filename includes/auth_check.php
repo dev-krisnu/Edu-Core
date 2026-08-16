@@ -68,16 +68,17 @@ function logAction(string $action, string $module = 'system'): void
 
 function getRoleDashboardPath(string $role): string
 {
+    require_once __DIR__ . '/../config/app.php';
     $map = [
-        'super_admin' => 'views/admin/dashboard.php',
-        'faculty'     => 'views/faculty/dashboard.php',
-        'student'     => 'views/student/dashboard.php',
-        'parent'      => 'views/student/dashboard.php',
-        'finance'     => 'views/finance/dashboard.php',
-        'librarian'   => 'views/library/dashboard.php',
-        'tpo'         => 'views/placements/dashboard.php',
+        'super_admin' => 'admin/dashboard.php',
+        'faculty'     => 'faculty/dashboard.php',
+        'student'     => 'student/dashboard.php',
+        'parent'      => 'parent/dashboard.php',
+        'finance'     => 'finance/dashboard.php',
+        'librarian'   => 'library/dashboard.php',
+        'tpo'         => 'placements/dashboard.php',
     ];
-    return $map[$role] ?? 'views/student/dashboard.php';
+    return url($map[$role] ?? 'student/dashboard.php');
 }
 
 function getRoleLabel(string $role): string
