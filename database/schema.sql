@@ -143,11 +143,15 @@ CREATE TABLE IF NOT EXISTS system_logs (
 
 -- Demo users (password: password123 for all)
 INSERT INTO users (full_name, email, password, role, phone) VALUES
-('Super Admin', 'admin@educore.edu', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'super_admin', '9876543210'),
-('Dr. Priya Sharma', 'faculty@educore.edu', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'faculty', '9876543211'),
-('Krrish Jeswar', 'student@educore.edu', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'student', '9876543212'),
-('Finance Officer', 'finance@educore.edu', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'finance', '9876543213'),
-('Library Manager', 'librarian@educore.edu', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'librarian', '9876543214'),
+('Super Admin', 'admin@educore.edu', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'super_admin', '948836388'),
+('Mr. Lakhan Mahato', 'lakhanmahato@educore.edu', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'faculty', '6295939450'),
+('Krrish Jeswar', 'krrishjeswar@educore.edu', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'student', '9679469493'),
+('Manish Kumar Chowdhury', 'manishkumarchowdhury@educore.edu', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'student', '8327657732'),
+('Komal Shaw', 'komalshaw@educore.edu', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'student', '7029447905'),
+('Bikram Ghosh', 'bikramghosh@educore.edu', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'student', '7864813973'),
+('Surjo Kanto Maji', 'surjokantomaji@educore.edu', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'student', '7876500012'),
+('Finance Officer', 'finance@educore.edu', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'finance', '4956936438'),
+('Library Manager', 'librarian@educore.edu', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'librarian', '0688659608'),
 ('TPO Head', 'tpo@educore.edu', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'tpo', '9876543215');
 
 INSERT INTO notices (title, content, posted_by, priority) VALUES
@@ -156,9 +160,18 @@ INSERT INTO notices (title, content, posted_by, priority) VALUES
 ('Placement Drive - TechCorp', 'TechCorp hiring SDE interns. Min CGPA 7.0. Apply via Placement Portal.', 6, 'high');
 
 INSERT INTO courses (code, title, department, credits, faculty_id) VALUES
-('CS301', 'Data Structures & Algorithms', 'Computer Science', 4, 2),
-('CS401', 'Machine Learning', 'Computer Science', 4, 2),
-('EC201', 'Digital Signal Processing', 'Electronics', 3, 2);
+('CS101', 'Introduction to Programming', 'Computer Science', 3, 1),
+('CS202', 'Database Management Systems', 'Computer Science', 4, 3),
+('CS305', 'Operating Systems', 'Computer Science', 4, 1),
+('CS420', 'Artificial Intelligence', 'Computer Science', 4, 2),
+('EC101', 'Basic Electronics', 'Electronics', 3, 4),
+('EC302', 'Microprocessors & Microcontrollers', 'Electronics', 4, 2),
+('EC405', 'Embedded Systems', 'Electronics', 3, 5),
+('MA101', 'Calculus & Linear Algebra', 'Mathematics', 4, 6),
+('MA204', 'Discrete Mathematics', 'Mathematics', 3, 6),
+('ME102', 'Engineering Mechanics', 'Mechanical Engineering', 3, 7),
+('ME301', 'Thermodynamics', 'Mechanical Engineering', 4, 7),
+('PH101', 'Engineering Physics', 'Physics', 3, 8);
 
 INSERT INTO fee_templates (name, category, amount, penalty_percent, due_date) VALUES
 ('Semester Tuition Fee', 'tuition', 45000.00, 2.00, '2026-03-31'),
@@ -171,12 +184,77 @@ INSERT INTO fee_invoices (student_id, template_id, amount, status) VALUES
 (3, 3, 5000.00, 'pending');
 
 INSERT INTO library_books (isbn, title, author, category, qr_code, total_copies, available_copies, shelf_location) VALUES
-('9780134685991', 'Effective Java', 'Joshua Bloch', 'Programming', 'QR-EJ-001', 3, 2, 'A-12'),
-('9780132350884', 'Clean Code', 'Robert Martin', 'Programming', 'QR-CC-002', 2, 2, 'A-14'),
-('9780262033848', 'Introduction to Algorithms', 'CLRS', 'Algorithms', 'QR-IA-003', 4, 3, 'B-01'),
-('9780134093413', 'The C Programming Language', 'K&R', 'Programming', 'QR-C-004', 5, 4, 'A-08');
+-- CS101: Introduction to Programming
+('9780133761313', 'Introduction to Java Programming', 'Y. Daniel Liang', 'Computer Science', 'QR-CS101-01', 5, 4, 'A-01'),
+('9780134444321', 'Starting Out with C++', 'Tony Gaddis', 'Computer Science', 'QR-CS101-02', 4, 3, 'A-02'),
+
+-- CS202: Database Management Systems
+('9780136086208', 'Database System Concepts', 'Abraham Silberschatz', 'Computer Science', 'QR-CS202-01', 3, 2, 'A-05'),
+('9780133970777', 'Fundamentals of Database Systems', 'Ramez Elmasri', 'Computer Science', 'QR-CS202-02', 4, 4, 'A-06'),
+
+-- CS305: Operating Systems
+('9781118063330', 'Operating System Concepts', 'Abraham Silberschatz', 'Computer Science', 'QR-CS305-01', 5, 3, 'B-03'),
+('9780133591620', 'Modern Operating Systems', 'Andrew S. Tanenbaum', 'Computer Science', 'QR-CS305-02', 3, 2, 'B-04'),
+
+-- CS420: Artificial Intelligence
+('9780134610993', 'Artificial Intelligence: A Modern Approach', 'Stuart Russell', 'Computer Science', 'QR-CS420-01', 4, 2, 'B-08'),
+('9781119549048', 'Machine Learning for Dummies', 'John Paul Mueller', 'Computer Science', 'QR-CS420-02', 2, 2, 'B-09'),
+
+-- EC101: Basic Electronics
+('9780132197076', 'Electronic Devices and Circuit Theory', 'Robert Boylestad', 'Electronics', 'QR-EC101-01', 6, 5, 'C-01'),
+('9789352834839', 'Principles of Electronics', 'V.K. Mehta', 'Electronics', 'QR-EC101-02', 5, 4, 'C-02'),
+
+-- EC302: Microprocessors & Microcontrollers
+('9788131732427', 'Microprocessor Architecture with the 8085', 'Ramesh Gaonkar', 'Electronics', 'QR-EC302-01', 3, 1, 'C-05'),
+('9780132344142', 'The 8051 Microcontroller & Embedded Systems', 'Muhammad Ali Mazidi', 'Electronics', 'QR-EC302-02', 4, 3, 'C-06'),
+
+-- EC405: Embedded Systems
+('9780070667648', 'Embedded Systems: Architecture and Design', 'Raj Kamal', 'Electronics', 'QR-EC405-01', 3, 3, 'C-09'),
+('9780070145894', 'Introduction to Embedded Systems', 'Shibu K.V', 'Electronics', 'QR-EC405-02', 5, 2, 'C-10'),
+
+-- MA101: Calculus & Linear Algebra
+('9788174091955', 'Higher Engineering Mathematics', 'B.S. Grewal', 'Mathematics', 'QR-MA101-01', 8, 6, 'D-01'),
+('9780321588760', 'Thomas Calculus', 'George B. Thomas', 'Mathematics', 'QR-MA101-02', 6, 4, 'D-02'),
+
+-- MA204: Discrete Mathematics
+('9780073383095', 'Discrete Mathematics and Its Applications', 'Kenneth H. Rosen', 'Mathematics', 'QR-MA204-01', 5, 5, 'D-05'),
+('9780074624708', 'Elements of Discrete Mathematics', 'C.L. Liu', 'Mathematics', 'QR-MA204-02', 3, 2, 'D-06'),
+
+-- ME102: Engineering Mechanics
+('9780133918922', 'Engineering Mechanics: Statics & Dynamics', 'R.C. Hibbeler', 'Mechanical', 'QR-ME102-01', 4, 3, 'E-01'),
+('9788121926188', 'A Textbook of Engineering Mechanics', 'R.S. Khurmi', 'Mechanical', 'QR-ME102-02', 5, 5, 'E-02'),
+
+-- ME301: Thermodynamics
+('9780073398174', 'Thermodynamics: An Engineering Approach', 'Yunus A. Çengel', 'Mechanical', 'QR-ME301-01', 4, 2, 'E-05'),
+('9789352606429', 'Engineering Thermodynamics', 'P.K. Nag', 'Mechanical', 'QR-ME301-02', 6, 4, 'E-06'),
+
+-- PH101: Engineering Physics
+('9789352533916', 'A Textbook of Engineering Physics', 'M.N. Avadhanulu', 'Physics', 'QR-PH101-01', 5, 4, 'F-01'),
+('9780070495531', 'Concepts of Modern Physics', 'Arthur Beiser', 'Physics', 'QR-PH101-02', 4, 3, 'F-02');
+
 
 INSERT INTO placement_drives (company_name, job_title, description, min_cgpa, package_lpa, drive_date, status) VALUES
-('TechCorp India', 'Software Development Engineer', 'Full-stack development with React and Node.js', 7.00, 12.00, '2026-04-15', 'upcoming'),
-('DataMind Analytics', 'Data Science Intern', 'ML pipelines and data visualization', 6.50, 8.00, '2026-04-20', 'upcoming'),
-('CloudNine Systems', 'DevOps Engineer', 'AWS, Docker, Kubernetes deployment', 7.50, 15.00, '2026-05-01', 'upcoming');
+-- Tier 1 Tech / Product
+('Tata Consultancy Services', 'Systems Engineer (Digital)', 'Full-stack application engineering and cloud services', 6.50, 7.00, '2026-03-10', 'completed'),
+('Infosys Limited', 'Specialist Programmer', 'High-performance computing and enterprise automation', 6.00, 9.50, '2026-03-15', 'completed'),
+('Wipro Limited', 'Turbo Engineer', 'Advanced application development and cybersecurity modules', 6.00, 6.50, '2026-03-22', 'completed'),
+('Amazon India', 'Software Development Engineer I', 'Scalable distributed systems, AWS infrastructure backend', 7.50, 32.00, '2026-04-05', 'completed'),
+('Google India', 'Associate Software Engineer', 'Core engineering, infrastructure optimization, and tools development', 8.00, 38.00, '2026-04-12', 'ongoing'),
+('Microsoft India', 'Support Engineer', 'Enterprise cloud troubleshooting and customer success systems', 7.00, 16.00, '2026-04-18', 'upcoming'),
+
+-- FinTech / Banking
+('Goldman Sachs', 'Engineering Analyst', 'Quantitative analysis, risk modeling infrastructure, and financial tech', 7.75, 24.00, '2026-04-25', 'upcoming'),
+('JPMorgan Chase & Co.', 'Software Engineer', 'Global banking platforms, cybersecurity, and digital transactions', 7.00, 14.00, '2026-04-28', 'upcoming'),
+('HDFC Bank', 'Data Analyst', 'Credit risk assessment and retail banking data pipelines', 6.50, 8.50, '2026-05-05', 'upcoming'),
+
+-- Consulting / Global Capability Centers
+('Accenture India', 'Advanced App Engineering Analyst', 'Client-side cloud custom development and agile architecture', 6.50, 6.50, '2026-05-10', 'upcoming'),
+('Deloitte India', 'Technology Consultant', 'Enterprise resource planning and cybersecurity advisory services', 6.75, 8.20, '2026-05-15', 'upcoming'),
+('Capgemini', 'Senior Analyst', 'Digital transformation, cloud microservices, and UI/UX design', 6.00, 4.25, '2026-05-20', 'upcoming'),
+
+-- Semi / Core / Networks
+('Intel India', 'Silicon Architecture Intern', 'VLSI design, hardware description languages, and chip verification', 8.00, 18.00, '2026-05-25', 'upcoming'),
+('Cisco Systems', 'Network Engineer', 'Enterprise routing, switching fabric, and software-defined networks', 7.00, 15.00, '2026-06-02', 'upcoming'),
+
+-- High-growth Startups / E-commerce
+('Flipkart', 'SDE-1', 'Supply chain automation engines and high-throughput web architectures', 7.50, 26.00, '2026-06-10', 'upcoming');
