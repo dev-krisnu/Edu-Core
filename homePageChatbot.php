@@ -30,7 +30,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
-<link rel="stylesheet" href="assets/css/themes.css">
+<link rel="stylesheet" href="assets/css/login-page.css">
 <style>
 .chat-wrap{max-width:720px;margin:40px auto;padding:24px}
 .chat-box{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:20px;padding:20px;min-height:360px;max-height:55vh;overflow-y:auto;margin-bottom:16px}
@@ -43,9 +43,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 .chat-input input{flex:1;padding:14px 18px;border-radius:12px;border:1px solid rgba(255,255,255,.2);background:rgba(0,0,0,.25);color:#fff;font-size:1rem}
 </style>
 </head>
-<body data-role="student">
-<div class="aurora-bg"><div class="aurora-blob b1"></div><div class="aurora-blob b2"></div></div>
-<div class="grain"></div>
+<body class="login-page">
+<div class="login-bg" aria-hidden="true"></div>
 <div class="container-shell chat-wrap">
   <a href="index.php" class="text-link" style="display:inline-block;margin-bottom:16px">← Back to Login</a>
   <div class="glass-panel glass-hi" style="padding:28px">

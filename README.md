@@ -2,8 +2,8 @@
 
 **EduCore** is an enterprise-grade, modular Web ERP/LMS designed for modern schools, colleges, and training institutes. It unifies institutional administration, proctored examinations, AI-driven question setting, result analytics, anti-plagiarism checking, automated financial operations, QR-code library management, and 24/7 AI student/faculty helpdesks into a single platform.
 
-![PHP](https://img.shields.io/badge/PHP-8.x-777BB4?style=flat-square&logo=php)
-![MySQL](https://img.shields.io/badge/MySQL-8.x-4479A1?style=flat-square&logo=mysql)
+![PHP](https://img.shields.io/badge/PHP-8.0-777BB4?style=flat-square&logo=php)
+![MySQL](https://img.shields.io/badge/MySQL-8.0-4479A1?style=flat-square&logo=mysql)
 ![Bootstrap](https://img.shields.io/badge/Bootstrap-5.3-7952B3?style=flat-square&logo=bootstrap)
 ![AI](https://img.shields.io/badge/AI-Gemini%20%2F%20Ollama-4285F4?style=flat-square)
 

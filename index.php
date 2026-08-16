@@ -1,20 +1,13 @@
 <?php
 /**
  * index.php — EduCore login gateway
- * Handles authentication for all seven roles (student, faculty, admin,
- * parent, finance, library, placements). The Student/Faculty toggle in the
- * UI is a convenience default for the two most common logins; the actual
- * redirect after login always follows the role stored in the database,
- * never the toggle, so nobody can spoof their way into the wrong portal.
  */
-
 declare(strict_types=1);
 session_start();
 
 require_once __DIR__ . '/config/database.php';
 require_once __DIR__ . '/config/app.php';
 
-// ---- Already logged in? Skip the gateway. ----
 if (!empty($_SESSION['user_id']) && !empty($_SESSION['user_role'])) {
     header('Location: ' . roleDashboardPath($_SESSION['user_role']));
     exit;
@@ -22,7 +15,6 @@ if (!empty($_SESSION['user_id']) && !empty($_SESSION['user_role'])) {
 
 function roleDashboardPath(string $role): string
 {
-    // Keys must match the `users.role` ENUM in database/schema.sql exactly.
     $map = [
         'super_admin' => 'admin/dashboard.php',
         'faculty'     => 'faculty/dashboard.php',
@@ -35,25 +27,22 @@ function roleDashboardPath(string $role): string
     return url($map[$role] ?? 'index.php');
 }
 
-// ---- CSRF token ----
 if (empty($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 }
 
-$errors    = [];
-$oldEmail  = '';
-$notices   = [];
+$errors  = [];
+$oldEmail = '';
+$notices = [];
 
-// Load public notices for the login page sidebar
 try {
     $pdoNotices = getDbConnection();
-    $nStmt = $pdoNotices->query('SELECT title FROM notices WHERE is_public = 1 ORDER BY created_at DESC LIMIT 5');
+    $nStmt = $pdoNotices->query('SELECT title, content FROM notices WHERE is_public = 1 ORDER BY created_at DESC LIMIT 4');
     $notices = $nStmt->fetchAll() ?: [];
 } catch (Throwable $e) {
     $notices = [];
 }
 
-// ---- Handle login submission ----
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $submittedToken = $_POST['csrf_token'] ?? '';
     $email    = trim((string)($_POST['email'] ?? ''));
@@ -84,8 +73,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 session_regenerate_id(true);
 
                 if (!empty($user['two_factor_enabled'])) {
-                    // Password verified, but the account requires a TOTP
-                    // code before the session becomes fully authenticated.
                     $_SESSION['pending_2fa_user_id'] = $user['id'];
                     $_SESSION['pending_2fa_role']    = $user['role'];
                     $_SESSION['pending_2fa_name']    = $user['full_name'];
@@ -106,182 +93,219 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 }
-
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>EduCore Login | Dr. B.C. Roy Engineering College</title>
+<title>EduCore — Dr. B.C. Roy Engineering College</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
-<link rel="stylesheet" href="assets/css/themes.css">
+<link rel="stylesheet" href="assets/css/login-page.css">
 </head>
-<body data-role="student">
+<body class="login-page">
 
-<div class="aurora-bg">
-  <div class="aurora-blob b1"></div>
-  <div class="aurora-blob b2"></div>
-  <div class="aurora-blob b3"></div>
-</div>
-<div class="grain"></div>
+<div class="login-bg" aria-hidden="true"></div>
 
-<div class="container-shell" style="padding: 24px; max-width: 1200px; margin: 0 auto;">
+<div class="login-shell">
 
-  <!-- Top strip -->
-  <div class="glass-strip" style="display:flex; align-items:center; justify-content:space-between; padding: 16px 24px; margin-bottom: 20px;">
-    <div style="display:flex; align-items:center; gap:14px;">
+  <header class="login-header">
+    <div class="login-brand">
       <div class="logo-mark">EC</div>
       <div>
-        <div class="h-display" style="font-size:1.15rem;">Edu<span class="brand-gradient">Core</span></div>
-        <div class="text-muted" style="font-size:0.78rem;">Campus Management System</div>
+        <h1>Edu<span class="brand-gradient">Core</span></h1>
+        <p>AI-Powered Campus Management System</p>
       </div>
     </div>
-    <div style="text-align:right;">
-      <div class="h-display" style="font-size:1.05rem;">Dr. B.C. Roy Engineering College</div>
-      <div class="eyebrow" style="color:var(--amber-300);">Durgapur</div>
+    <div class="college-block">
+      <h2>Dr. B.C. Roy Engineering College</h2>
+      <div class="eyebrow">Durgapur · West Bengal</div>
     </div>
+  </header>
+
+  <div class="login-main">
+
+    <!-- Hero + features -->
+    <section class="hero-panel">
+      <div class="hero-kicker">
+        <i class="bi bi-stars"></i> Unified ERP &amp; LMS · Powered by Gemini AI
+      </div>
+
+      <h2 class="hero-title">
+        Your entire campus,<br>
+        <span class="brand-gradient">one intelligent platform</span>
+      </h2>
+
+      <p class="hero-desc">
+        Manage academics, proctored exams, fees, library circulation, placements, and
+        24/7 AI assistance — built for students, faculty, and every department on campus.
+      </p>
+
+      <div class="stats-row">
+        <div class="stat-pill"><strong>7</strong><span>Role Portals</span></div>
+        <div class="stat-pill"><strong>AI</strong><span>Smart Tutor</span></div>
+        <div class="stat-pill"><strong>QR</strong><span>Library Desk</span></div>
+        <div class="stat-pill"><strong>24/7</strong><span>Helpdesk</span></div>
+      </div>
+
+      <div class="feature-grid">
+        <div class="feature-card">
+          <div class="feature-icon i1"><i class="bi bi-robot"></i></div>
+          <div>
+            <h3>AI Question Setter</h3>
+            <p>Auto-generate exams using Bloom's Taxonomy with Gemini.</p>
+          </div>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon i2"><i class="bi bi-display"></i></div>
+          <div>
+            <h3>Proctored Exams</h3>
+            <p>Secure online terminal with tab-switch detection.</p>
+          </div>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon i3"><i class="bi bi-search"></i></div>
+          <div>
+            <h3>Plagiarism Inspector</h3>
+            <p>AI-powered similarity and content analysis.</p>
+          </div>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon i4"><i class="bi bi-briefcase"></i></div>
+          <div>
+            <h3>Placement Hub</h3>
+            <p>Resume matching and internship drive management.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="info-row">
+        <div class="light-card">
+          <div class="eyebrow">Campus Notices</div>
+          <?php if (empty($notices)): ?>
+            <p class="notice-empty">No new notices at this time.</p>
+          <?php else: ?>
+            <ul class="notice-list">
+              <?php foreach ($notices as $n): ?>
+                <li>
+                  <span class="notice-dot"></span>
+                  <span><?= htmlspecialchars($n['title'], ENT_QUOTES, 'UTF-8') ?></span>
+                </li>
+              <?php endforeach; ?>
+            </ul>
+          <?php endif; ?>
+        </div>
+        <div class="light-card">
+          <div class="eyebrow">Digital Campus ID</div>
+          <div class="id-badge" id="idBadge">
+            <div class="id-badge-content">
+              <div class="id-badge-top">
+                <span class="pill">EDU · ID</span>
+                <div class="id-badge-qr"></div>
+              </div>
+              <div>
+                <div class="id-badge-name">Campus Access Card</div>
+                <div class="id-badge-id">DBCREC · SCAN TO VERIFY</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Login -->
+    <aside class="login-column">
+      <div class="login-card">
+        <h2>Welcome back</h2>
+        <p class="login-sub">Sign in to access your portal</p>
+
+        <div class="role-toggle" id="roleToggle">
+          <input type="radio" name="role_display" id="role-student" checked>
+          <input type="radio" name="role_display" id="role-faculty">
+          <div class="role-thumb"></div>
+          <label for="role-student">Student</label>
+          <label for="role-faculty">Faculty</label>
+        </div>
+
+        <?php foreach ($errors as $err): ?>
+          <div class="alert alert-error"><?= htmlspecialchars($err, ENT_QUOTES, 'UTF-8') ?></div>
+        <?php endforeach; ?>
+
+        <form method="POST" action="index.php" novalidate>
+          <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8') ?>">
+
+          <div class="field">
+            <label for="email">Email address</label>
+            <input type="email" id="email" name="email" placeholder="komalshaw@educore.edu" value="<?= $oldEmail ?>" required autofocus>
+          </div>
+
+          <div class="field">
+            <label for="password">Password</label>
+            <input type="password" id="password" name="password" placeholder="Enter your password" required>
+            <button type="button" class="field-icon-btn" id="togglePw" aria-label="Show password"><i class="bi bi-eye"></i></button>
+          </div>
+
+          <button type="submit" class="btn btn-gradient btn-block">
+            <i class="bi bi-box-arrow-in-right"></i> Log in to EduCore
+          </button>
+        </form>
+
+        <div class="divider-label">or continue with</div>
+
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <span class="text-muted">New here?</span>
+          <a href="signup.php" class="text-link">Create an account →</a>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span class="text-muted">Forgot password?</span>
+          <a href="forgotPassword.php" class="text-link">Reset it →</a>
+        </div>
+      </div>
+
+      <div class="ai-promo">
+        <h3><i class="bi bi-chat-heart" style="color:#6366f1"></i> Need help signing in?</h3>
+        <p>Our Gemini-powered assistant can guide you to the right portal.</p>
+        <a href="homePageChatbot.php" class="btn btn-ghost btn-block">
+          <i class="bi bi-stars"></i> Open AI Assistant
+        </a>
+      </div>
+    </aside>
+
   </div>
 
-  <!-- Main grid -->
-  <div style="display:grid; grid-template-columns: 300px 1fr; gap: 20px; flex: 1;" class="main-grid">
+  <footer class="login-footer">
+    Edu<span class="brand-gradient">Core</span> v1.0.0 · Dr. B.C. Roy Engineering College · Ardent PHP Internship 2026
+  </footer>
 
-    <!-- Left: notices + ID badge -->
-    <div style="display:flex; flex-direction:column; gap:20px;" class="lg-hide">
-      <div class="glass-panel" style="padding: 22px;">
-        <div class="eyebrow" style="margin-bottom:12px;">Notice Board</div>
-        <?php if (empty($notices)): ?>
-          <p class="notice-empty">No new notices at this time.</p>
-        <?php else: ?>
-          <ul class="notice-list">
-            <?php foreach ($notices as $n): ?>
-              <li><span class="notice-dot"></span><?= htmlspecialchars($n['title'], ENT_QUOTES, 'UTF-8') ?></li>
-            <?php endforeach; ?>
-          </ul>
-        <?php endif; ?>
-      </div>
-
-      <div>
-        <div class="eyebrow" style="margin-bottom:12px;">Your Digital ID</div>
-        <div class="id-badge" id="idBadge">
-          <div class="id-badge-content">
-            <div class="id-badge-top">
-              <span class="pill">EDU · ID</span>
-              <div class="id-badge-qr"></div>
-            </div>
-            <div>
-              <div class="id-badge-name">Campus Access Card </div>
-              <div class="id-badge-id">DBCREC · SCAN TO VERIFY</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Right: login -->
-    <div>
-      <div class="glass-panel glass-hi" style="padding: 8px; margin-bottom: 20px;">
-        <div style="display:flex; justify-content:center; padding: 10px;">
-          <div class="role-toggle" id="roleToggle">
-            <input type="radio" name="role_display" id="role-student" checked>
-            <input type="radio" name="role_display" id="role-faculty">
-            <div class="role-thumb"></div>
-            <label for="role-student">Student</label>
-            <label for="role-faculty">Faculty</label>
-          </div>
-        </div>
-      </div>
-
-      <div style="display:grid; grid-template-columns: 1.6fr 1fr; gap: 20px;" class="login-grid">
-
-        <div class="glass-panel" style="padding: 36px;">
-          <h1 class="h-display" style="font-size:1.9rem; margin-bottom: 26px;">Welcome back</h1>
-
-          <?php foreach ($errors as $err): ?>
-            <div class="alert alert-error"><?= htmlspecialchars($err, ENT_QUOTES, 'UTF-8') ?></div>
-          <?php endforeach; ?>
-
-          <form method="POST" action="index.php" novalidate>
-            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8') ?>">
-
-            <div class="field">
-              <label for="email">Email address</label>
-              <input type="email" id="email" name="email" placeholder="Example: komalshaw@gmail.com" value="<?= $oldEmail ?>" required autofocus>
-            </div>
-
-            <div class="field">
-              <label for="password">Password</label>
-              <input type="password" id="password" name="password" placeholder="••••••••••" required>
-              <button type="button" class="field-icon-btn" id="togglePw" aria-label="Show password">👁</button>
-            </div>
-
-            <button type="submit" class="btn btn-gradient btn-block">Log in</button>
-          </form>
-
-          <div class="divider-label">or</div>
-
-          <div style="display:flex; justify-content:space-between; align-items:center;">
-            <span class="text-muted" style="font-size:0.85rem;">New here?</span>
-            <a href="signup.php" class="text-link">Create an account →</a>
-          </div>
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
-            <span class="text-muted" style="font-size:0.85rem;">Forgot something?</span>
-            <a href="forgotPassword.php" class="text-link">Reset your password →</a>
-          </div>
-        </div>
-
-        <div style="display:flex; flex-direction:column; gap:20px;">
-          <div class="glass-panel" style="padding: 24px; text-align:center;">
-            <div class="eyebrow" style="margin-bottom:10px;">Need help?</div>
-            <p class="text-muted" style="font-size:0.85rem; margin-bottom:16px;">Our AI assistant can help you recover access or find the right portal.</p>
-            <a href="homePageChatbot.php" class="btn btn-ghost btn-block">Open AI Assistant</a>
-          </div>
-
-          <div class="glass-panel" style="padding: 20px; text-align:center;">
-            <div class="h-display" style="font-size:1rem;">Edu<span class="brand-gradient">Core</span></div>
-            <div class="pill" style="margin-top:10px;">v1.0.0</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
 </div>
 
 <script>
-  // Password visibility toggle
-  const pwInput = document.getElementById('password');
-  const pwToggle = document.getElementById('togglePw');
-  pwToggle.addEventListener('click', () => {
-    const isHidden = pwInput.type === 'password';
-    pwInput.type = isHidden ? 'text' : 'password';
-    pwToggle.textContent = isHidden ? '🙈' : '👁';
-    pwToggle.setAttribute('aria-label', isHidden ? 'Hide password' : 'Show password');
+const pwInput = document.getElementById('password');
+const pwToggle = document.getElementById('togglePw');
+pwToggle.addEventListener('click', () => {
+  const isHidden = pwInput.type === 'password';
+  pwInput.type = isHidden ? 'text' : 'password';
+  pwToggle.innerHTML = isHidden ? '<i class="bi bi-eye-slash"></i>' : '<i class="bi bi-eye"></i>';
+  pwToggle.setAttribute('aria-label', isHidden ? 'Hide password' : 'Show password');
+});
+
+const badge = document.getElementById('idBadge');
+if (window.matchMedia('(prefers-reduced-motion: reduce)').matches === false) {
+  badge.addEventListener('mousemove', (e) => {
+    const rect = badge.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width - 0.5;
+    const y = (e.clientY - rect.top) / rect.height - 0.5;
+    badge.style.transform = `rotateX(${y * -6}deg) rotateY(${x * 8}deg)`;
   });
-
-  // Subtle tilt on the digital ID badge signature element
-  const badge = document.getElementById('idBadge');
-  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches === false) {
-    badge.addEventListener('mousemove', (e) => {
-      const rect = badge.getBoundingClientRect();
-      const x = (e.clientX - rect.left) / rect.width - 0.5;
-      const y = (e.clientY - rect.top) / rect.height - 0.5;
-      badge.style.transform = `rotateX(${y * -8}deg) rotateY(${x * 10}deg)`;
-    });
-    badge.addEventListener('mouseleave', () => {
-      badge.style.transform = 'rotateX(0deg) rotateY(0deg)';
-    });
-  }
+  badge.addEventListener('mouseleave', () => {
+    badge.style.transform = 'rotateX(0deg) rotateY(0deg)';
+  });
+}
 </script>
-
-<style>
-  @media (max-width: 960px) {
-    .main-grid { grid-template-columns: 1fr !important; }
-    .login-grid { grid-template-columns: 1fr !important; }
-  }
-</style>
 
 </body>
 </html>
