@@ -39,11 +39,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_FILES['project_file'])) {
 
 // Fetch assigned projects
 $stmt = $pdo->prepare("
-    SELECT * FROM exams 
-    WHERE student_id = ? AND exam_type = 'project'
-    ORDER BY due_date DESC
+    SELECT e.*, e.title AS exam_name, e.end_time AS exam_date
+    FROM exams e
+    WHERE e.status IN ('scheduled', 'active')
+    ORDER BY e.end_time DESC
+    LIMIT 10
 ");
-$stmt->execute([$currentUser['id']]);
+$stmt->execute();
 $projects = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Fetch submitted projects
@@ -62,10 +64,7 @@ $submissions = $stmt->fetchAll(PDO::FETCH_ASSOC);
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Project Submit - EduCore</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link href="../assets/css/educore.css" rel="stylesheet">
-    <link href="../assets/css/themes.css" rel="stylesheet">
+    <?php $portalBase = '..'; include __DIR__ . '/../includes/portal_head.php'; ?>
     <style>
         .projects-container {
             max-width: 1000px;
@@ -290,7 +289,7 @@ $submissions = $stmt->fetchAll(PDO::FETCH_ASSOC);
         }
     </style>
 </head>
-<body data-role="student">
+<body class="portal-page" data-role="student">
     <div class="aurora-bg">
         <div class="aurora-blob b1"></div>
         <div class="aurora-blob b2"></div>

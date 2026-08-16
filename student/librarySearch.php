@@ -23,11 +23,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $searchQuery = trim($_GET['search'] ?? '');
     $selectedCategory = trim($_GET['category'] ?? '');
     
-    $sql = "SELECT * FROM library_books WHERE 1=1";
+    $sql = "SELECT *, title AS book_title FROM library_books WHERE 1=1";
     $params = [];
     
     if ($searchQuery) {
-        $sql .= " AND (book_title LIKE ? OR author LIKE ? OR isbn LIKE ?)";
+        $sql .= " AND (title LIKE ? OR author LIKE ? OR isbn LIKE ?)";
         $params = ["%$searchQuery%", "%$searchQuery%", "%$searchQuery%"];
     }
     
@@ -36,7 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $params[] = $selectedCategory;
     }
     
-    $sql .= " ORDER BY book_title ASC";
+    $sql .= " ORDER BY title ASC";
     
     $stmt = $pdo->prepare($sql);
     $stmt->execute($params);
@@ -49,11 +49,11 @@ $categories = $stmt->fetchAll(PDO::FETCH_COLUMN);
 
 // Get user's borrowed books
 $stmt = $pdo->prepare("
-    SELECT lc.*, lb.book_title 
+    SELECT lc.*, lb.title AS book_title
     FROM library_circulation lc
     JOIN library_books lb ON lc.book_id = lb.id
-    WHERE lc.user_id = ? AND lc.status IN ('issued', 'overdue')
-    ORDER BY lc.issued_date DESC
+    WHERE lc.student_id = ? AND lc.returned_at IS NULL
+    ORDER BY lc.issued_at DESC
 ");
 $stmt->execute([$currentUser['id']]);
 $borrowedBooks = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -64,10 +64,7 @@ $borrowedBooks = $stmt->fetchAll(PDO::FETCH_ASSOC);
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Library Search - EduCore</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link href="../assets/css/educore.css" rel="stylesheet">
-    <link href="../assets/css/themes.css" rel="stylesheet">
+    <?php $portalBase = '..'; include __DIR__ . '/../includes/portal_head.php'; ?>
     <style>
         .library-container {
             max-width: 1200px;
@@ -273,7 +270,7 @@ $borrowedBooks = $stmt->fetchAll(PDO::FETCH_ASSOC);
         }
     </style>
 </head>
-<body data-role="student">
+<body class="portal-page" data-role="student">
     <div class="aurora-bg">
         <div class="aurora-blob b1"></div>
         <div class="aurora-blob b2"></div>

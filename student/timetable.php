@@ -17,20 +17,17 @@ $pdo = getDbConnection();
 
 // Get student's enrolled courses with schedule
 $stmt = $pdo->prepare("
-    SELECT c.*, f.name as faculty_name,
-           GROUP_CONCAT(DISTINCT 
-               CONCAT(e.exam_date, '|', e.exam_name) 
-           ) as upcoming_exams
+    SELECT c.*, c.title AS course_name, f.full_name AS faculty_name,
+           GROUP_CONCAT(DISTINCT
+               CONCAT(e.start_time, '|', e.title)
+           ) AS upcoming_exams
     FROM courses c
     LEFT JOIN users f ON c.faculty_id = f.id
-    LEFT JOIN exams e ON c.id = e.course_id AND e.exam_date >= CURDATE()
-    WHERE c.id IN (
-        SELECT course_id FROM fee_invoices WHERE student_id = ? GROUP BY course_id
-    )
+    LEFT JOIN exams e ON c.id = e.course_id AND e.start_time >= CURDATE()
     GROUP BY c.id
-    ORDER BY c.course_name ASC
+    ORDER BY c.title ASC
 ");
-$stmt->execute([$currentUser['id']]);
+$stmt->execute();
 $courses = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Weekly schedule data
@@ -43,10 +40,7 @@ $timeSlots = ['9:00 AM', '10:00 AM', '11:00 AM', '1:00 PM', '2:00 PM', '3:00 PM'
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Timetable - EduCore</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link href="../assets/css/educore.css" rel="stylesheet">
-    <link href="../assets/css/themes.css" rel="stylesheet">
+    <?php $portalBase = '..'; include __DIR__ . '/../includes/portal_head.php'; ?>
     <style>
         .timetable-container {
             max-width: 1200px;
@@ -227,7 +221,7 @@ $timeSlots = ['9:00 AM', '10:00 AM', '11:00 AM', '1:00 PM', '2:00 PM', '3:00 PM'
         }
     </style>
 </head>
-<body data-role="student">
+<body class="portal-page" data-role="student">
     <div class="aurora-bg">
         <div class="aurora-blob b1"></div>
         <div class="aurora-blob b2"></div>

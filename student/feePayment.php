@@ -18,22 +18,22 @@ $pdo = getDbConnection();
 
 // Fetch pending invoices
 $stmt = $pdo->prepare("
-    SELECT fi.*, ft.fee_name, ft.amount as template_amount
+    SELECT fi.*, ft.name AS fee_name, ft.amount AS template_amount
     FROM fee_invoices fi
     LEFT JOIN fee_templates ft ON fi.template_id = ft.id
-    WHERE fi.student_id = ? AND fi.status != 'completed'
-    ORDER BY fi.due_date ASC
+    WHERE fi.student_id = ? AND fi.status IN ('pending', 'overdue')
+    ORDER BY fi.created_at ASC
 ");
 $stmt->execute([$currentUser['id']]);
 $pendingInvoices = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Fetch payment history
 $stmt = $pdo->prepare("
-    SELECT fi.*, ft.fee_name
+    SELECT fi.*, ft.name AS fee_name, fi.paid_at AS payment_date
     FROM fee_invoices fi
     LEFT JOIN fee_templates ft ON fi.template_id = ft.id
-    WHERE fi.student_id = ? AND fi.status = 'completed'
-    ORDER BY fi.payment_date DESC
+    WHERE fi.student_id = ? AND fi.status = 'paid'
+    ORDER BY fi.paid_at DESC
     LIMIT 10
 ");
 $stmt->execute([$currentUser['id']]);
@@ -77,10 +77,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['action'])) {
                 if ($invoiceId) {
                     $stmt = $pdo->prepare("
                         UPDATE fee_invoices 
-                        SET status = 'completed', payment_date = NOW(), payment_id = ?
+                        SET status = 'paid', paid_at = NOW()
                         WHERE id = ?
                     ");
-                    $stmt->execute([$paymentId, $invoiceId]);
+                    $stmt->execute([$invoiceId]);
                     $paymentMessage = 'Payment successful! Invoice updated.';
                     unset($_SESSION['payment_order']);
                 }
@@ -99,10 +99,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['action'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fee Payment - EduCore</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link href="../assets/css/educore.css" rel="stylesheet">
-    <link href="../assets/css/themes.css" rel="stylesheet">
+    <?php $portalBase = '..'; include __DIR__ . '/../includes/portal_head.php'; ?>
     <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
     <style>
         .fee-container {
@@ -254,7 +251,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['action'])) {
         }
     </style>
 </head>
-<body data-role="student">
+<body class="portal-page" data-role="student">
     <div class="aurora-bg">
         <div class="aurora-blob b1"></div>
         <div class="aurora-blob b2"></div>
@@ -371,7 +368,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['action'])) {
                                     <td>#<?php echo htmlspecialchars($history['id']); ?></td>
                                     <td><?php echo htmlspecialchars($history['fee_name'] ?? 'General Fee'); ?></td>
                                     <td><strong>₹<?php echo number_format($history['amount'], 2); ?></strong></td>
-                                    <td><?php echo date('M d, Y', strtotime($history['payment_date'])); ?></td>
+                                    <td><?php echo date('M d, Y', strtotime($history['payment_date'] ?? $history['created_at'] ?? 'now')); ?></td>
                                     <td>
                                         <span class="status-badge status-completed">
                                             COMPLETED

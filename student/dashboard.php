@@ -48,8 +48,7 @@ try {
     // Get pending assignments
     $assignmentsStmt = $pdo->prepare('
         SELECT COUNT(*) as pending 
-        FROM exam_questions 
-        WHERE created_at > DATE_SUB(NOW(), INTERVAL 7 DAY)
+        FROM exam_questions
     ');
     $assignmentsStmt->execute();
     $assignmentStats = $assignmentsStmt->fetch();
@@ -64,10 +63,7 @@ try {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Student Dashboard - EduCore</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link href="../assets/css/educore.css" rel="stylesheet">
-    <link href="../assets/css/themes.css" rel="stylesheet">
+    <?php $portalBase = '..'; include __DIR__ . '/../includes/portal_head.php'; ?>
     <style>
         .dashboard-grid {
             display: grid;
@@ -249,7 +245,7 @@ try {
         }
     </style>
 </head>
-<body data-role="student">
+<body class="portal-page" data-role="student">
     <div class="aurora-bg">
         <div class="aurora-blob b1"></div>
         <div class="aurora-blob b2"></div>
@@ -336,10 +332,10 @@ try {
                             <?php foreach ($upcomingExams as $exam): ?>
                                 <div class="exam-card">
                                     <div class="exam-info">
-                                        <div class="exam-name"><?php echo htmlspecialchars($exam['course_name'] ?? 'Exam'); ?></div>
+                                        <div class="exam-name"><?php echo htmlspecialchars($exam['course_title'] ?? $exam['title'] ?? 'Exam'); ?></div>
                                         <div class="exam-date">
                                             <i class="bi bi-calendar3"></i> 
-                                            <?php echo date('M d, Y \a\t H:i', strtotime($exam['exam_date'])); ?>
+                                            <?php echo date('M d, Y \a\t H:i', strtotime($exam['start_time'] ?? 'now')); ?>
                                         </div>
                                     </div>
                                     <div class="exam-badge">Start Exam</div>

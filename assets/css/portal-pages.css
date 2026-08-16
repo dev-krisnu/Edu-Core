@@ -1,0 +1,52 @@
+/* Dark portal layout — student/faculty pages using sidebar + aurora theme */
+body.portal-page {
+  background: var(--bg-deep, #0b0b2e);
+  color: var(--ink-50, #f5f4ff);
+  min-height: 100vh;
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+}
+
+body.portal-page .container-shell {
+  display: flex;
+  flex-direction: row;
+  min-height: 100vh;
+  position: relative;
+  z-index: 2;
+}
+
+body.portal-page .container-shell > .sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  flex-shrink: 0;
+}
+
+body.portal-page .container-shell > main {
+  flex: 1;
+  margin-left: var(--sidebar-width, 280px);
+  padding: 28px 24px 40px;
+  min-width: 0;
+  z-index: 2;
+}
+
+body.portal-page p {
+  color: rgba(245, 244, 255, 0.82);
+}
+
+body.portal-page .section-title {
+  color: #f5f4ff;
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin: 0 0 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+@media (max-width: 991px) {
+  body.portal-page .container-shell > main {
+    margin-left: 0;
+    padding-top: 72px;
+  }
+}

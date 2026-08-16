@@ -16,13 +16,15 @@ $currentUser = getCurrentUser();
 $pdo = getDbConnection();
 
 // Fetch courses
-$stmt = $pdo->query("SELECT DISTINCT course_name FROM courses LIMIT 10");
+$stmt = $pdo->query("SELECT DISTINCT title AS course_name FROM courses LIMIT 10");
 $courses = $stmt->fetchAll(PDO::FETCH_COLUMN);
 
 // Fetch exam questions as study materials
 $stmt = $pdo->prepare("
-    SELECT * FROM exam_questions 
-    ORDER BY created_at DESC
+    SELECT eq.*, e.title AS exam_title
+    FROM exam_questions eq
+    LEFT JOIN exams e ON eq.exam_id = e.id
+    ORDER BY eq.id DESC
     LIMIT 20
 ");
 $stmt->execute();
@@ -34,10 +36,7 @@ $studyMaterials = $stmt->fetchAll(PDO::FETCH_ASSOC);
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Study Corner - EduCore</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link href="../assets/css/educore.css" rel="stylesheet">
-    <link href="../assets/css/themes.css" rel="stylesheet">
+    <?php $portalBase = '..'; include __DIR__ . '/../includes/portal_head.php'; ?>
     <style>
         .study-container {
             max-width: 1100px;
@@ -235,7 +234,7 @@ $studyMaterials = $stmt->fetchAll(PDO::FETCH_ASSOC);
         }
     </style>
 </head>
-<body data-role="student">
+<body class="portal-page" data-role="student">
     <div class="aurora-bg">
         <div class="aurora-blob b1"></div>
         <div class="aurora-blob b2"></div>

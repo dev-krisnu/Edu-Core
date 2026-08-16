@@ -284,9 +284,14 @@ h6, .h6 {
   margin: 0 0 6px 0;
 }
 
-p {
+body.educore-body p {
   margin: 0 0 12px 0;
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--text-muted, #64748b);
+}
+
+body.portal-page p {
+  margin: 0 0 12px 0;
+  color: rgba(245, 244, 255, 0.82);
 }
 
 /* Small text for improved readability */

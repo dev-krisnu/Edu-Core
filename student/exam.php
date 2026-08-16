@@ -23,10 +23,10 @@ $violations = 0;
 if ($examId) {
     try {
         $stmt = $pdo->prepare('
-            SELECT e.*, c.course_name 
+            SELECT e.*, c.title AS course_name 
             FROM exams e 
             JOIN courses c ON e.course_id = c.id 
-            WHERE e.id = ? AND e.exam_date <= NOW()
+            WHERE e.id = ? AND e.start_time <= NOW()
         ');
         $stmt->execute([$examId]);
         $exam = $stmt->fetch();
@@ -47,10 +47,7 @@ if ($examId) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Exam Terminal - EduCore</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link href="../assets/css/educore.css" rel="stylesheet">
-    <link href="../assets/css/themes.css" rel="stylesheet">
+    <?php $portalBase = '..'; include __DIR__ . '/../includes/portal_head.php'; ?>
     <style>
         .exam-container {
             max-width: 1200px;
@@ -241,7 +238,7 @@ if ($examId) {
         }
     </style>
 </head>
-<body data-role="student">
+<body class="portal-page" data-role="student">
     <div class="aurora-bg">
         <div class="aurora-blob b1"></div>
         <div class="aurora-blob b2"></div>

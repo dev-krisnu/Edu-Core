@@ -16,12 +16,15 @@ $currentUser = getCurrentUser();
 $pdo = getDbConnection();
 
 // Fetch events
-$stmt = $pdo->query("
-    SELECT * FROM events 
-    ORDER BY event_date DESC
+$eventsStmt = $pdo->query("
+    SELECT id, title, content AS description, created_at AS event_date,
+           priority AS category, 'Auditorium' AS location, 'Campus Admin' AS organizer
+    FROM notices
+    WHERE is_public = 1
+    ORDER BY created_at DESC
     LIMIT 20
 ");
-$events = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$events = $eventsStmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -29,10 +32,7 @@ $events = $stmt->fetchAll(PDO::FETCH_ASSOC);
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Events Hub - EduCore</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link href="../assets/css/educore.css" rel="stylesheet">
-    <link href="../assets/css/themes.css" rel="stylesheet">
+    <?php $portalBase = '..'; include __DIR__ . '/../includes/portal_head.php'; ?>
     <style>
         .events-container {
             max-width: 1000px;
@@ -222,7 +222,7 @@ $events = $stmt->fetchAll(PDO::FETCH_ASSOC);
         }
     </style>
 </head>
-<body data-role="student">
+<body class="portal-page" data-role="student">
     <div class="aurora-bg">
         <div class="aurora-blob b1"></div>
         <div class="aurora-blob b2"></div>

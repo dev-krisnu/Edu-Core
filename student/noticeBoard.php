@@ -18,7 +18,7 @@ $pdo = getDbConnection();
 // Fetch notices
 $stmt = $pdo->prepare("
     SELECT * FROM notices 
-    WHERE status = 'active'
+    WHERE is_public = 1
     ORDER BY created_at DESC
     LIMIT 30
 ");
@@ -31,10 +31,7 @@ $notices = $stmt->fetchAll(PDO::FETCH_ASSOC);
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Notice Board - EduCore</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link href="../assets/css/educore.css" rel="stylesheet">
-    <link href="../assets/css/themes.css" rel="stylesheet">
+    <?php $portalBase = '..'; include __DIR__ . '/../includes/portal_head.php'; ?>
     <style>
         .notices-container {
             max-width: 900px;
@@ -230,7 +227,7 @@ $notices = $stmt->fetchAll(PDO::FETCH_ASSOC);
         }
     </style>
 </head>
-<body data-role="student">
+<body class="portal-page" data-role="student">
     <div class="aurora-bg">
         <div class="aurora-blob b1"></div>
         <div class="aurora-blob b2"></div>
