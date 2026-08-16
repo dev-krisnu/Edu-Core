@@ -36,10 +36,10 @@
 
 | Layer | Technology |
 
-| Backend  | PHP 8.0 (Modular MVC)              |
-| Database | MySQL / MariaDB (PDO) (via XAMPP)  |
-| Frontend | HTML5, CSS3, Bootstrap 5, Chart.js |
-| AI       | Google Gemini API ( also Ollama )  |
+- | Backend  | PHP 8.0 (Modular MVC)              |
+- | Database | MySQL / MariaDB (PDO) (via XAMPP)  |
+- | Frontend | HTML5, CSS3, Bootstrap 5, Chart.js |
+- | AI       | Google Gemini API ( also Ollama )  |
 
 ## Quick Start
 
