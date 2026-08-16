@@ -10,13 +10,15 @@ CREATE TABLE IF NOT EXISTS users (
     phone VARCHAR(20),
     address TEXT,
     role ENUM('super_admin','faculty','student','parent','finance','librarian','tpo') NOT NULL DEFAULT 'student',
+    parent_id INT DEFAULT NULL,
     photo VARCHAR(255) DEFAULT 'default.png',
     status ENUM('active','inactive','suspended') DEFAULT 'active',
     two_factor_secret VARCHAR(64) DEFAULT NULL,
     two_factor_enabled TINYINT(1) NOT NULL DEFAULT 0,
     reset_token_hash VARCHAR(255) DEFAULT NULL,
     reset_token_expires DATETIME DEFAULT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (parent_id) REFERENCES users(id) ON DELETE SET NULL
 );
 
 CREATE TABLE IF NOT EXISTS notices (
@@ -65,6 +67,22 @@ CREATE TABLE IF NOT EXISTS exam_questions (
     marks INT DEFAULT 5,
     bloom_level VARCHAR(30),
     FOREIGN KEY (exam_id) REFERENCES exams(id) ON DELETE CASCADE
+);
+
+-- Per-student exam attempts/results. `exams` only stores the exam
+-- definition (title, course, total_marks, schedule); this table stores
+-- each student's individual attempt and grade.
+CREATE TABLE IF NOT EXISTS exam_responses (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    exam_id INT NOT NULL,
+    student_id INT NOT NULL,
+    obtained_marks DECIMAL(6,2) DEFAULT NULL,
+    feedback TEXT,
+    status ENUM('in_progress','submitted','graded') DEFAULT 'in_progress',
+    submitted_at DATETIME DEFAULT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (exam_id) REFERENCES exams(id) ON DELETE CASCADE,
+    FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS fee_templates (
@@ -186,9 +204,9 @@ INSERT INTO fee_templates (name, category, amount, penalty_percent, due_date) VA
 ('Lab & Equipment Fee', 'lab', 5000.00, 0.00, '2026-04-01');
 
 INSERT INTO fee_invoices (student_id, template_id, amount, status) VALUES
-(3, 1, 45000.00, 'pending'),
-(3, 2, 18000.00, 'paid'),
-(3, 3, 5000.00, 'pending');
+(4, 1, 45000.00, 'pending'),
+(4, 2, 18000.00, 'paid'),
+(4, 3, 5000.00, 'pending');
 
 
 INSERT INTO library_books (isbn, title, author, category, qr_code, total_copies, available_copies, shelf_location) VALUES
@@ -268,3 +286,14 @@ INSERT INTO placement_drives (company_name, job_title, description, min_cgpa, pa
 ('Flipkart', 'SDE-1', 'Supply chain automation engines and high-throughput web architectures', 7.50, 26.00, '2026-06-10', 'upcoming');
 
 
+
+-- Link the demo parent to a demo student, and seed one completed exam +
+-- graded result so the parent scorecard / student exam-results pages have
+-- something to display right after a fresh install.
+UPDATE users SET parent_id = 12 WHERE id = 4; -- Parent Demo -> Krrish Jeswar
+
+INSERT INTO exams (title, course_id, duration_minutes, total_marks, start_time, end_time, status, created_by) VALUES
+('CS101 Mid-Semester Exam', 1, 90, 100, '2026-03-15 10:00:00', '2026-03-15 11:30:00', 'completed', 2);
+
+INSERT INTO exam_responses (exam_id, student_id, obtained_marks, status, submitted_at) VALUES
+(1, 4, 82, 'graded', '2026-03-15 11:25:00');
