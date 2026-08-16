@@ -1,4 +1,4 @@
-# EduCore - Unified AI-Powered Educational ERP & LMS
+# EduCore : Unified AI-Powered Educational ERP & LMS
 
 **EduCore** is an enterprise-grade, modular Web ERP/LMS designed for modern schools, colleges, and training institutes. It unifies institutional administration, proctored examinations, AI-driven question setting, result analytics, anti-plagiarism checking, automated financial operations, QR-code library management, and 24/7 AI student/faculty helpdesks into a single platform.
 
@@ -35,16 +35,17 @@
 ## Tech Stack
 
 | Layer | Technology |
+|-------|-----------|
+| Backend | PHP 8.x (Modular MVC) |
+| Database | MySQL / MariaDB (PDO) |
+| Frontend | HTML5, CSS3, Bootstrap 5, Chart.js |
+| AI | Google Gemini API / Ollama (local) |
 
-- | Backend  | PHP 8.0 (Modular MVC)              |
-- | Database | MySQL / MariaDB (PDO) (via XAMPP)  |
-- | Frontend | HTML5, CSS3, Bootstrap 5, Chart.js |
-- | AI       | Google Gemini API ( also Ollama )  |
 
 ## Quick Start
 
 ### 1. Prerequisites
-- XAMPP (Apache + MySQL + PHP 8.0)
+- XAMPP (Apache + MySQL + PHP 8.x)
 - Git
 
 ### 2. Clone & Setup
@@ -72,15 +73,15 @@ http://localhost/folder-name/Edu-Core/
 
 ## Demo Accounts
 
-| Role        | Email                    | Password |
-
-| Super Admin | admin@educore.edu        | password |
-| Faculty     | faculty@educore.edu      | password |
-| Student     | krrishjeswar@educore.edu | password |
-| Parent      | parent@educore.edu       | password |
-| Finance     | finance@educore.edu      | password |
-| Librarian   | librarian@educore.edu    | password |
-| TPO         | tpo@educore.edu          | password |
+| Role | Email | Password |
+|------|-------|----------|
+| Super Admin | admin@educore.edu | password |
+| Faculty | faculty@educore.edu | password |
+| Student | krrishjeswar@educore.edu | password |
+| Parent | parent@educore.edu | password |
+| Finance | finance@educore.edu | password |
+| Librarian | librarian@educore.edu | password |
+| TPO | tpo@educore.edu | password |
 
 ## Project Structure
 
@@ -114,4 +115,4 @@ Without an API key, the system runs in **demo mode** with intelligent fallback r
 
 ## License
 
-Built by Krrish Jeswar ( krisnu.dev ).
+Built by Krrish Jeswar.
