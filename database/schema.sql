@@ -6,12 +6,16 @@ CREATE TABLE IF NOT EXISTS users (
     id INT AUTO_INCREMENT PRIMARY KEY,
     full_name VARCHAR(120) NOT NULL,
     email VARCHAR(120) NOT NULL UNIQUE,
-    password VARCHAR(255) NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
     phone VARCHAR(20),
     address TEXT,
     role ENUM('super_admin','faculty','student','parent','finance','librarian','tpo') NOT NULL DEFAULT 'student',
     photo VARCHAR(255) DEFAULT 'default.png',
     status ENUM('active','inactive','suspended') DEFAULT 'active',
+    two_factor_secret VARCHAR(64) DEFAULT NULL,
+    two_factor_enabled TINYINT(1) NOT NULL DEFAULT 0,
+    reset_token_hash VARCHAR(255) DEFAULT NULL,
+    reset_token_expires DATETIME DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -21,6 +25,7 @@ CREATE TABLE IF NOT EXISTS notices (
     content TEXT NOT NULL,
     posted_by INT,
     priority ENUM('low','medium','high') DEFAULT 'medium',
+    is_public TINYINT(1) NOT NULL DEFAULT 1,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (posted_by) REFERENCES users(id) ON DELETE SET NULL
 );
@@ -142,7 +147,7 @@ CREATE TABLE IF NOT EXISTS system_logs (
 );
 
 -- Demo users (password: password123 for all)
-INSERT INTO users (full_name, email, password, role, phone) VALUES
+INSERT INTO users (full_name, email, password_hash, role, phone) VALUES
 ('Super Admin', 'admin@educore.edu', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'super_admin', '948836388'),
 ('Mr. Lakhan Mahato', 'lakhanmahato@educore.edu', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'faculty', '6295939450'),
 ('Krrish Jeswar', 'krrishjeswar@educore.edu', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'student', '9679469493'),
@@ -182,6 +187,7 @@ INSERT INTO fee_invoices (student_id, template_id, amount, status) VALUES
 (3, 1, 45000.00, 'pending'),
 (3, 2, 18000.00, 'paid'),
 (3, 3, 5000.00, 'pending');
+
 
 INSERT INTO library_books (isbn, title, author, category, qr_code, total_copies, available_copies, shelf_location) VALUES
 -- CS101: Introduction to Programming
@@ -258,3 +264,5 @@ INSERT INTO placement_drives (company_name, job_title, description, min_cgpa, pa
 
 -- High-growth Startups / E-commerce
 ('Flipkart', 'SDE-1', 'Supply chain automation engines and high-throughput web architectures', 7.50, 26.00, '2026-06-10', 'upcoming');
+
+
