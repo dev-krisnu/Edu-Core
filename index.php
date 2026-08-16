@@ -104,8 +104,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
-<link rel="stylesheet" href="<?= htmlspecialchars(url('style.css')) ?>">
-<link rel="stylesheet" href="<?= htmlspecialchars(url('assets/css/login-page.css')) ?>">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="assets/css/login-page.css">
 </head>
 <body class="login-page" data-portal="student">
 
@@ -255,7 +255,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           <div class="alert alert-error"><?= htmlspecialchars($err, ENT_QUOTES, 'UTF-8') ?></div>
         <?php endforeach; ?>
 
-          <form method="POST" action="<?= htmlspecialchars(url('index.php')) ?>" novalidate>
+        <form method="POST" action="index.php" novalidate>
           <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8') ?>">
 
           <div class="field">
@@ -278,18 +278,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
           <span class="text-muted">New here?</span>
-          <a href="<?= htmlspecialchars(url('signup.php')) ?>" class="text-link">Create an account →</a>
+          <a href="signup.php" class="text-link">Create an account →</a>
         </div>
         <div style="display:flex;justify-content:space-between;align-items:center">
           <span class="text-muted">Forgot password?</span>
-          <a href="<?= htmlspecialchars(url('forgotPassword.php')) ?>" class="text-link">Reset it →</a>
+          <a href="forgotPassword.php" class="text-link">Reset it →</a>
         </div>
       </div>
 
       <div class="ai-promo">
         <h3><i class="bi bi-chat-heart" style="color:#6366f1"></i> Need help signing in?</h3>
         <p>Our Gemini-powered assistant can guide you to the right portal.</p>
-        <a href="<?= htmlspecialchars(url('homePageChatbot.php')) ?>" class="btn btn-ghost btn-block">
+        <a href="homePageChatbot.php" class="btn btn-ghost btn-block">
           <i class="bi bi-stars"></i> Open AI Assistant
         </a>
       </div>

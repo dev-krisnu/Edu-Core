@@ -14,8 +14,8 @@ $roleTheme = getRoleThemeKey($user['role'] ?? 'student');
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link href="<?= htmlspecialchars(url('assets/css/educore.css')) ?>" rel="stylesheet">
-    <link href="<?= htmlspecialchars(url('assets/css/themes.css')) ?>" rel="stylesheet">
+    <link href="<?= $basePath ?>/assets/css/educore.css" rel="stylesheet">
+    <link href="<?= $basePath ?>/assets/css/themes.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
 <body class="educore-body theme-<?= htmlspecialchars($roleTheme) ?>" data-role="<?= htmlspecialchars($roleTheme) ?>">
@@ -51,7 +51,7 @@ $roleTheme = getRoleThemeKey($user['role'] ?? 'student');
                         <li><a class="dropdown-item" href="#"><i class="bi bi-person me-2"></i>Profile</a></li>
                         <li><a class="dropdown-item" href="#"><i class="bi bi-gear me-2"></i>Settings</a></li>
                         <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item text-danger" href="<?= htmlspecialchars(url('logout.php')) ?>"><i class="bi bi-box-arrow-right me-2"></i>Logout</a></li>
+                        <li><a class="dropdown-item text-danger" href="<?= $basePath ?>/logout.php"><i class="bi bi-box-arrow-right me-2"></i>Logout</a></li>
                     </ul>
                 </div>
             </div>
