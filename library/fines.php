@@ -19,17 +19,16 @@ $status_filter = trim($_GET['status'] ?? '');
 
 // Fetch fines
 $sql = "SELECT lc.*, u.full_name as student_name, u.email,
-               lb.book_title, lc.due_date,
+               lb.title AS book_title, lc.due_date,
                DATEDIFF(CURDATE(), lc.due_date) as days_overdue
         FROM library_circulation lc
         JOIN users u ON lc.student_id = u.id
         JOIN library_books lb ON lc.book_id = lb.id
-        WHERE lc.return_date IS NULL AND lc.due_date < CURDATE()";
+        WHERE lc.returned_at IS NULL AND lc.due_date < CURDATE()";
 $params = [];
 
 if ($status_filter) {
-    $sql .= " AND lc.status = ?";
-    $params[] = $status_filter;
+    $sql .= " AND " . ($status_filter === 'overdue' ? 'lc.due_date < CURDATE()' : 'lc.returned_at IS NULL');
 }
 
 $sql .= " ORDER BY lc.due_date ASC LIMIT 50";
@@ -52,7 +51,7 @@ $stmt = $pdo->query("
         COUNT(*) as total_overdue,
         SUM(DATEDIFF(CURDATE(), due_date)) as total_days_overdue
     FROM library_circulation
-    WHERE return_date IS NULL AND due_date < CURDATE()
+    WHERE returned_at IS NULL AND due_date < CURDATE()
 ");
 $stats = $stmt->fetch(PDO::FETCH_ASSOC);
 ?>

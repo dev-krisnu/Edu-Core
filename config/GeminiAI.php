@@ -216,11 +216,14 @@ Keep response under 250 words.";
             ]
         ];
 
-        $url = $this->baseUrl . '?key=' . urlencode($this->apiKey);
+        $url = $this->baseUrl;
 
         $ch = curl_init($url);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            'Content-Type: application/json',
+            'x-goog-api-key: ' . $this->apiKey,
+        ]);
         curl_setopt($ch, CURLOPT_POST, true);
         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
         curl_setopt($ch, CURLOPT_TIMEOUT, 30);
@@ -230,14 +233,15 @@ Keep response under 250 words.";
         $curlError = curl_error($ch);
         curl_close($ch);
 
-        if ($httpCode !== 200) {
-            error_log("[Gemini API Error] HTTP $httpCode: $response");
-            return "Error: Failed to get AI response (HTTP $httpCode)";
-        }
-
         if ($curlError) {
             error_log("[Gemini API cURL Error] $curlError");
             return "Error: Connection failed";
+        }
+
+        if ($httpCode !== 200) {
+            $message = json_decode((string) $response, true)['error']['message'] ?? 'The AI service did not return a response.';
+            error_log("[Gemini API Error] HTTP $httpCode: $message");
+            return "Error: {$message}";
         }
 
         $data = json_decode($response, true);

@@ -317,7 +317,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['action'])) {
                                 $statusClass = $isOverdue ? 'status-overdue' : 'status-pending';
                             ?>
                                 <tr>
-                                    <td>#<?php echo htmlspecialchars($invoice['id']); ?></td>
+                                    <td>#<?php echo htmlspecialchars((string) $invoice['id']); ?></td>
                                     <td><?php echo htmlspecialchars($invoice['fee_name'] ?? 'General Fee'); ?></td>
                                     <td><strong>₹<?php echo number_format((float)$invoice['amount'], 2); ?></strong></td>
                                     <td><?php echo $invoice['due_date'] ? date('M d, Y', strtotime($invoice['due_date'])) : 'N/A'; ?></td>
@@ -365,9 +365,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['action'])) {
                         <tbody>
                             <?php foreach ($paymentHistory as $history): ?>
                                 <tr>
-                                    <td>#<?php echo htmlspecialchars($history['id']); ?></td>
+                                    <td>#<?php echo htmlspecialchars((string) $history['id']); ?></td>
                                     <td><?php echo htmlspecialchars($history['fee_name'] ?? 'General Fee'); ?></td>
-                                    <td><strong>₹<?php echo number_format($history['amount'], 2); ?></strong></td>
+                                    <td><strong>₹<?php echo number_format((float) $history['amount'], 2); ?></strong></td>
                                     <td><?php echo date('M d, Y', strtotime($history['payment_date'] ?? $history['created_at'] ?? 'now')); ?></td>
                                     <td>
                                         <span class="status-badge status-completed">

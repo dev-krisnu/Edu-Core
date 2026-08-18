@@ -15,13 +15,13 @@ requireRole(['student']);
 $currentUser = getCurrentUser();
 $pdo = getDbConnection();
 
-// Fetch events
+// Fetch campus events created by the administration.
 $eventsStmt = $pdo->query("
-    SELECT id, title, content AS description, created_at AS event_date,
-           priority AS category, 'Auditorium' AS location, 'Campus Admin' AS organizer
-    FROM notices
-    WHERE is_public = 1
-    ORDER BY created_at DESC
+    SELECT id, event_name AS title, description, event_date, category, location,
+           'Campus Admin' AS organizer
+    FROM events
+    WHERE status = 'active'
+    ORDER BY event_date ASC
     LIMIT 20
 ");
 $events = $eventsStmt->fetchAll(PDO::FETCH_ASSOC);

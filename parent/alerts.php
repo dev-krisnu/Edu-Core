@@ -51,12 +51,13 @@ if ($selectedStudent) {
         SELECT 
             'payment' as type,
             'Pending fee payment' as message,
-            CONCAT('₹', amount) as details,
-            due_date as created_at,
-            CASE WHEN due_date < CURDATE() THEN 'error' ELSE 'warning' END as severity
-        FROM fee_invoices
+            CONCAT('₹', fi.amount) as details,
+            COALESCE(ft.due_date, fi.created_at) as created_at,
+            CASE WHEN ft.due_date < CURDATE() THEN 'error' ELSE 'warning' END as severity
+        FROM fee_invoices fi
+        LEFT JOIN fee_templates ft ON fi.template_id = ft.id
         WHERE student_id = ? AND status = 'pending'
-        ORDER BY due_date ASC
+        ORDER BY ft.due_date ASC
     ");
     $stmt->execute([$selectedStudent]);
     $alerts = array_merge($alerts, $stmt->fetchAll(PDO::FETCH_ASSOC));

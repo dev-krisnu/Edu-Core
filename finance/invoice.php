@@ -18,7 +18,7 @@ $pdo = getDbConnection();
 // Fetch invoices with filtering
 $status_filter = trim($_GET['status'] ?? '');
 
-$sql = "SELECT fi.*, u.full_name AS name, ft.name AS fee_name 
+$sql = "SELECT fi.*, u.full_name AS name, ft.name AS fee_name, ft.due_date
         FROM fee_invoices fi
         JOIN users u ON fi.student_id = u.id
         LEFT JOIN fee_templates ft ON fi.template_id = ft.id
@@ -278,17 +278,17 @@ while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
                         </thead>
                         <tbody>
                             <?php foreach ($invoices as $invoice): 
-                                $dueDate = new DateTime($invoice['due_date']);
+                                $dueDate = !empty($invoice['due_date']) ? new DateTime($invoice['due_date']) : null;
                                 $today = new DateTime();
-                                $isOverdue = $dueDate < $today && $invoice['status'] !== 'completed';
+                                $isOverdue = $dueDate !== null && $dueDate < $today && $invoice['status'] !== 'paid';
                                 $statusClass = $isOverdue ? 'status-overdue' : 'status-' . $invoice['status'];
                             ?>
                                 <tr>
-                                    <td><strong>#<?php echo htmlspecialchars($invoice['id']); ?></strong></td>
+                                    <td><strong>#<?php echo htmlspecialchars((string) $invoice['id']); ?></strong></td>
                                     <td><?php echo htmlspecialchars($invoice['name']); ?></td>
                                     <td><?php echo htmlspecialchars($invoice['fee_name'] ?? 'General Fee'); ?></td>
                                     <td>₹<?php echo number_format((float)$invoice['amount'], 2); ?></td>
-                                    <td><?php echo $dueDate->format('M d, Y'); ?></td>
+                                    <td><?php echo $dueDate ? $dueDate->format('M d, Y') : 'Not set'; ?></td>
                                     <td>
                                         <span class="status-badge <?php echo $statusClass; ?>">
                                             <?php echo $isOverdue ? 'OVERDUE' : strtoupper($invoice['status']); ?>

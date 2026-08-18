@@ -391,7 +391,7 @@ $exams = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                         </span>
                                     </td>
                                     <td>
-                                        <button class="action-btn" onclick="alert('Edit: ' + '<?php echo addslashes($exam['exam_name']); ?>')">
+                                        <button class="action-btn" onclick="alert('Edit: ' + '<?php echo addslashes($exam['title']); ?>')">
                                             <i class="bi bi-pencil"></i> Edit
                                         </button>
                                     </td>

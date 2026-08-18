@@ -297,9 +297,9 @@ while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
                             ?>
                                 <tr>
                                     <td><span class="company-name"><?php echo htmlspecialchars(substr($drive['company_name'] ?? 'N/A', 0, 20)); ?></span></td>
-                                    <td><?php echo htmlspecialchars($drive['position'] ?? 'N/A'); ?></td>
+                                    <td><?php echo htmlspecialchars($drive['job_title'] ?? 'N/A'); ?></td>
                                     <td><?php echo $driveDate->format('M d, Y'); ?></td>
-                                    <td>₹<?php echo number_format($drive['salary'] ?? 0, 0); ?></td>
+                                    <td>₹<?php echo number_format((float) ($drive['package_lpa'] ?? 0), 2); ?> LPA</td>
                                     <td><?php echo $drive['total_applications']; ?></td>
                                     <td><strong><?php echo $drive['selected_count']; ?></strong></td>
                                     <td>

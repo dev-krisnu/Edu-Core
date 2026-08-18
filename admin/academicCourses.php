@@ -58,7 +58,7 @@ $stmt->execute([]);
 $courses = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Fetch faculty for assignment
-$stmt = $pdo->query("SELECT id, name, email FROM users WHERE role = 'faculty' ORDER BY name");
+$stmt = $pdo->query("SELECT id, full_name AS name, email FROM users WHERE role = 'faculty' ORDER BY full_name");
 $faculty = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
 <!DOCTYPE html>

@@ -11,7 +11,7 @@ define('AI_PROVIDER', env('AI_PROVIDER', 'gemini')); // 'gemini' or 'ollama'
 
 // Google Gemini API (get key from https://aistudio.google.com)
 define('GEMINI_API_KEY', env('GEMINI_API_KEY', ''));
-define('GEMINI_MODEL', env('GEMINI_MODEL', 'gemini-2.0-flash'));
+define('GEMINI_MODEL', env('GEMINI_MODEL', 'gemini-2.5-flash'));
 define('GEMINI_API_URL', 'https://generativelanguage.googleapis.com/v1beta/models/' . GEMINI_MODEL . ':generateContent');
 
 // Ollama (local fallback)

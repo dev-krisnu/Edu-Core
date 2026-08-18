@@ -26,7 +26,7 @@ if ($category_filter) {
     $params[] = $category_filter;
 }
 
-$sql .= " ORDER BY book_title ASC LIMIT 50";
+$sql .= " ORDER BY title ASC LIMIT 50";
 
 $stmt = $pdo->prepare($sql);
 $stmt->execute($params);
@@ -37,7 +37,7 @@ $stmt = $pdo->query("SELECT DISTINCT category FROM library_books ORDER BY catego
 $categories = $stmt->fetchAll(PDO::FETCH_COLUMN);
 
 // Get statistics
-$stmt = $pdo->query("SELECT COUNT(*) as total, SUM(quantity) as total_qty, SUM(available_copies) as available FROM library_books");
+$stmt = $pdo->query("SELECT COUNT(*) as total, SUM(total_copies) as total_qty, SUM(available_copies) as available FROM library_books");
 $stats = $stmt->fetch(PDO::FETCH_ASSOC);
 ?>
 <!DOCTYPE html>
@@ -282,7 +282,7 @@ $stats = $stmt->fetch(PDO::FETCH_ASSOC);
                         <tbody>
                             <?php foreach ($books as $book): 
                                 $available = $book['available_copies'];
-                                if ($available > $book['quantity'] / 2) {
+                                if ($available > $book['total_copies'] / 2) {
                                     $statusClass = 'available';
                                     $statusText = 'In Stock';
                                 } elseif ($available > 0) {
@@ -294,11 +294,11 @@ $stats = $stmt->fetch(PDO::FETCH_ASSOC);
                                 }
                             ?>
                                 <tr>
-                                    <td><strong><?php echo htmlspecialchars(substr($book['book_title'], 0, 30)); ?></strong></td>
+                                    <td><strong><?php echo htmlspecialchars(substr($book['title'], 0, 30)); ?></strong></td>
                                     <td><?php echo htmlspecialchars($book['author']); ?></td>
                                     <td><?php echo htmlspecialchars($book['isbn']); ?></td>
                                     <td><span class="category-badge"><?php echo htmlspecialchars($book['category']); ?></span></td>
-                                    <td><?php echo $book['quantity']; ?></td>
+                                    <td><?php echo $book['total_copies']; ?></td>
                                     <td><?php echo $book['available_copies']; ?></td>
                                     <td>
                                         <span class="availability-badge <?php echo $statusClass; ?>">
@@ -306,7 +306,7 @@ $stats = $stmt->fetch(PDO::FETCH_ASSOC);
                                         </span>
                                     </td>
                                     <td>
-                                        <button class="action-btn" onclick="alert('Edit: ' + '<?php echo addslashes($book['book_title']); ?>')">
+                                        <button class="action-btn" onclick="alert('Edit: ' + '<?php echo addslashes($book['title']); ?>')">
                                             <i class="bi bi-pencil"></i> Edit
                                         </button>
                                     </td>

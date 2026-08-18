@@ -16,11 +16,11 @@ $pdo = getDbConnection();
 
 try {
     $totalDrives = $pdo->query('SELECT COUNT(*) as count FROM placement_drives')->fetch()['count'] ?? 0;
-    $activeDrives = $pdo->query('SELECT COUNT(*) as count FROM placement_drives WHERE status = "active"')->fetch()['count'] ?? 0;
+    $activeDrives = $pdo->query('SELECT COUNT(*) as count FROM placement_drives WHERE status = "ongoing"')->fetch()['count'] ?? 0;
     $applications = $pdo->query('SELECT COUNT(*) as count FROM placement_applications')->fetch()['count'] ?? 0;
     $selectedCount = $pdo->query('SELECT COUNT(*) as count FROM placement_applications WHERE status = "selected"')->fetch()['count'] ?? 0;
     
-    $recentDrives = $pdo->query('SELECT * FROM placement_drives ORDER BY created_at DESC LIMIT 8')->fetchAll();
+    $recentDrives = $pdo->query('SELECT * FROM placement_drives ORDER BY drive_date DESC LIMIT 8')->fetchAll();
 } catch (Exception $e) {
     error_log('[Placements Dashboard] Error: ' . $e->getMessage());
 }
@@ -231,7 +231,7 @@ try {
                                     <div class="drive-title"><?php echo htmlspecialchars($drive['company_name'] ?? 'Company'); ?></div>
                                     <div class="drive-info">
                                         <span><i class="bi bi-calendar"></i> <?php echo date('M d', strtotime($drive['drive_date'] ?? 'now')); ?></span>
-                                        <span><i class="bi bi-briefcase"></i> <?php echo htmlspecialchars($drive['position'] ?? 'Position'); ?></span>
+                                        <span><i class="bi bi-briefcase"></i> <?php echo htmlspecialchars($drive['job_title'] ?? 'Position'); ?></span>
                                     </div>
                                     <span class="drive-badge"><?php echo ucfirst(htmlspecialchars($drive['status'] ?? 'pending')); ?></span>
                                 </div>

@@ -22,7 +22,7 @@ try {
     
     if (!empty($children)) {
         $childId = $children[0]['id'];
-        $attendanceStmt = $pdo->prepare('SELECT COUNT(*) as attended FROM exams WHERE student_id = ? AND status = "completed"');
+        $attendanceStmt = $pdo->prepare("SELECT COUNT(*) as attended FROM attendance WHERE student_id = ? AND status IN ('present', 'late')");
         $attendanceStmt->execute([$childId]);
         $attendance = $attendanceStmt->fetch()['attended'] ?? 0;
     } else {

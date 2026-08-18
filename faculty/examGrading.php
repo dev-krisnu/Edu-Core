@@ -283,7 +283,7 @@ if ($selectedExam) {
                         <?php foreach ($exams as $exam): ?>
                             <a href="?exam=<?php echo $exam['id']; ?>" 
                                class="exam-option <?php echo $exam['id'] == $selectedExam ? 'active' : ''; ?>">
-                                <i class="bi bi-file-earmark-text"></i> <?php echo htmlspecialchars(substr($exam['exam_name'], 0, 20)); ?>
+                                <i class="bi bi-file-earmark-text"></i> <?php echo htmlspecialchars(substr($exam['title'], 0, 20)); ?>
                                 <span style="font-size: 0.75rem; opacity: 0.8;">
                                     (<?php echo $exam['pending_grading']; ?> pending)
                                 </span>

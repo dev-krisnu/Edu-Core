@@ -16,10 +16,10 @@ $pdo = getDbConnection();
 
 try {
     $totalBooks = $pdo->query('SELECT COUNT(*) as count FROM library_books')->fetch()['count'] ?? 0;
-    $availableBooks = $pdo->query('SELECT COUNT(*) as count FROM library_books WHERE total_copies > issued_copies')->fetch()['count'] ?? 0;
-    $issuedCopies = $pdo->query('SELECT COALESCE(SUM(issued_copies), 0) as total FROM library_books')->fetch()['total'] ?? 0;
-    $activeFines = $pdo->query('SELECT COUNT(*) as count FROM library_circulation WHERE status = "overdue"')->fetch()['count'] ?? 0;
-    $recentCirc = $pdo->query('SELECT * FROM library_circulation ORDER BY created_at DESC LIMIT 8')->fetchAll();
+    $availableBooks = $pdo->query('SELECT COUNT(*) as count FROM library_books WHERE available_copies > 0')->fetch()['count'] ?? 0;
+    $issuedCopies = $pdo->query('SELECT COALESCE(SUM(total_copies - available_copies), 0) as total FROM library_books')->fetch()['total'] ?? 0;
+    $activeFines = $pdo->query('SELECT COUNT(*) as count FROM library_circulation WHERE returned_at IS NULL AND due_date < CURDATE()')->fetch()['count'] ?? 0;
+    $recentCirc = $pdo->query('SELECT * FROM library_circulation ORDER BY issued_at DESC LIMIT 8')->fetchAll();
 } catch (Exception $e) {
     error_log('[Library Dashboard] Error: ' . $e->getMessage());
 }
@@ -245,13 +245,13 @@ try {
                                 <?php if (!empty($recentCirc)): ?>
                                     <?php foreach ($recentCirc as $circ): ?>
                                         <tr>
-                                            <td><?php echo htmlspecialchars($circ['book_id'] ?? 'N/A'); ?></td>
-                                            <td><?php echo htmlspecialchars($circ['user_id'] ?? 'N/A'); ?></td>
-                                            <td><?php echo ucfirst(htmlspecialchars($circ['circ_type'] ?? 'unknown')); ?></td>
-                                            <td><?php echo date('M d, Y', strtotime($circ['created_at'])); ?></td>
+                                            <td><?php echo htmlspecialchars((string) ($circ['book_id'] ?? 'N/A')); ?></td>
+                                            <td><?php echo htmlspecialchars((string) ($circ['student_id'] ?? 'N/A')); ?></td>
+                                            <td><?php echo $circ['returned_at'] ? 'Return' : 'Issue'; ?></td>
+                                            <td><?php echo date('M d, Y', strtotime($circ['returned_at'] ?: $circ['issued_at'])); ?></td>
                                             <td>
-                                                <span class="status-badge-lib status-<?php echo $circ['status'] ?? 'issued'; ?>">
-                                                    <?php echo ucfirst($circ['status'] ?? 'issued'); ?>
+                                                <span class="status-badge-lib status-<?php echo $circ['returned_at'] ? 'returned' : 'issued'; ?>">
+                                                    <?php echo $circ['returned_at'] ? 'Returned' : 'Issued'; ?>
                                                 </span>
                                             </td>
                                         </tr>

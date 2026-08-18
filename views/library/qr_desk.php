@@ -3,7 +3,7 @@ require_once __DIR__ . '/../../includes/auth_check.php';
 requireRole(['librarian']);
 
 $pageTitle = 'QR Circulation Desk';
-$basePath = '../..';
+$basePath = '..';
 include __DIR__ . '/../../includes/header.php';
 ?>
 
@@ -20,6 +20,7 @@ include __DIR__ . '/../../includes/header.php';
             <p class="opacity-75 mb-4">Use webcam scanner or type QR code manually</p>
 
             <input type="text" id="qrInput" class="qr-input" placeholder="Scan or type QR code (e.g. QR-EJ-001)" autofocus>
+            <input type="number" id="studentIdInput" class="qr-input mt-3" min="1" placeholder="Student ID (required to issue)">
 
             <div class="d-flex gap-3 justify-content-center mt-3">
                 <button class="btn btn-light" onclick="scanAction('lookup')"><i class="bi bi-search me-2"></i>Lookup</button>
@@ -47,7 +48,7 @@ async function scanAction(action) {
     if (!qr) { alert('Enter a QR code'); return; }
     const res = await fetch('../../api/scan_qr_library.php', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ qr_code: qr, action })
+        body: JSON.stringify({ qr_code: qr, action, student_id: document.getElementById('studentIdInput').value })
     });
     const data = await res.json();
     const el = document.getElementById('qrResult');

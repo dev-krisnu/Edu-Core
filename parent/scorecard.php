@@ -287,7 +287,7 @@ $avgPercentage = count($examResults) > 0 ? array_reduce($examResults, fn($sum, $
                                     <td><?php echo htmlspecialchars($result['course_name']); ?></td>
                                     <td><?php echo htmlspecialchars($result['exam_name'] ?? 'Exam'); ?></td>
                                     <td><?php echo $result['obtained_marks']; ?>/<?php echo $result['total_marks']; ?></td>
-                                    <td><strong><?php echo number_format($result['percentage'], 1); ?>%</strong></td>
+                                    <td><strong><?php echo number_format((float) $result['percentage'], 1); ?>%</strong></td>
                                     <td>
                                         <div class="grade-badge <?php echo $gradeClass; ?>">
                                             <?php echo $grade; ?>

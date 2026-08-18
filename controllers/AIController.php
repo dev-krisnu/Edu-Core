@@ -89,18 +89,28 @@ class AIController
             ],
         ];
 
-        $ch = curl_init(GEMINI_API_URL . '?key=' . GEMINI_API_KEY);
+        $ch = curl_init(GEMINI_API_URL);
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_POST => true,
-            CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
+            CURLOPT_HTTPHEADER => [
+                'Content-Type: application/json',
+                'x-goog-api-key: ' . GEMINI_API_KEY,
+            ],
             CURLOPT_POSTFIELDS => json_encode($payload),
             CURLOPT_TIMEOUT => 25,
         ]);
         $result = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curlError = curl_error($ch);
         curl_close($ch);
 
         $data = json_decode((string) $result, true);
+        if ($curlError !== '' || $httpCode !== 200) {
+            $message = $data['error']['message'] ?? ($curlError ?: 'The AI service did not return a response.');
+            error_log("[Gemini API Error] HTTP {$httpCode}: {$message}");
+            return "Error: {$message}";
+        }
         return $data['candidates'][0]['content']['parts'][0]['text'] ?? $this->fallbackResponse($prompt);
     }
 
