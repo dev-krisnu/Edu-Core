@@ -15,10 +15,40 @@ requireRole(['finance']);
 $currentUser = getCurrentUser();
 $pdo = getDbConnection();
 
+$message = '';
+$messageType = '';
+
+// Handle invoice update (status / amount / penalty)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'edit_invoice') {
+    $invoice_id = intval($_POST['invoice_id'] ?? 0);
+    $amount = (float) ($_POST['amount'] ?? 0);
+    $penalty = (float) ($_POST['penalty'] ?? 0);
+    $status = $_POST['status'] ?? '';
+
+    if ($invoice_id && $amount > 0 && in_array($status, ['pending', 'paid', 'overdue', 'cancelled'], true)) {
+        try {
+            $paidAt = $status === 'paid' ? date('Y-m-d H:i:s') : null;
+            $stmt = $pdo->prepare("
+                UPDATE fee_invoices SET amount = ?, penalty = ?, status = ?, paid_at = ?
+                WHERE id = ?
+            ");
+            $stmt->execute([$amount, $penalty, $status, $paidAt, $invoice_id]);
+            $message = 'Invoice updated successfully!';
+            $messageType = 'success';
+        } catch (Exception $e) {
+            $message = 'Error: ' . $e->getMessage();
+            $messageType = 'error';
+        }
+    } else {
+        $message = 'Amount and status are required.';
+        $messageType = 'error';
+    }
+}
+
 // Fetch invoices with filtering
 $status_filter = trim($_GET['status'] ?? '');
 
-$sql = "SELECT fi.*, u.full_name AS name, ft.name AS fee_name, ft.due_date
+$sql = "SELECT fi.*, u.full_name AS name, u.email AS student_email, ft.name AS fee_name, ft.due_date
         FROM fee_invoices fi
         JOIN users u ON fi.student_id = u.id
         LEFT JOIN fee_templates ft ON fi.template_id = ft.id
@@ -226,6 +256,12 @@ while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
                     <p style="color: rgba(255, 255, 255, 0.6); margin: 0;">Track and manage student fee invoices</p>
                 </div>
 
+                <?php if ($message): ?>
+                    <div class="message <?php echo $messageType; ?>" style="padding:14px; border-radius:8px; margin-bottom:20px; border-left:4px solid <?php echo $messageType === 'success' ? '#10B981' : '#EF4444'; ?>; background:rgba(<?php echo $messageType === 'success' ? '16,185,129' : '239,68,68'; ?>,0.1); color:<?php echo $messageType === 'success' ? '#6EE7B7' : '#FCA5A5'; ?>;">
+                        <?php echo htmlspecialchars($message); ?>
+                    </div>
+                <?php endif; ?>
+
                 <!-- Summary Cards -->
                 <div class="summary-cards">
                     <div class="summary-card">
@@ -295,10 +331,28 @@ while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
                                         </span>
                                     </td>
                                     <td>
-                                        <button class="action-btn" onclick="alert('View invoice')">
+                                        <button class="action-btn" type="button"
+                                            onclick='openViewInvoiceModal(<?php echo json_encode([
+                                                "id" => $invoice["id"],
+                                                "name" => $invoice["name"],
+                                                "student_email" => $invoice["student_email"],
+                                                "fee_name" => $invoice["fee_name"] ?? "General Fee",
+                                                "amount" => $invoice["amount"],
+                                                "penalty" => $invoice["penalty"],
+                                                "status" => $isOverdue ? "OVERDUE" : strtoupper($invoice["status"]),
+                                                "due_date" => $dueDate ? $dueDate->format("M d, Y") : "Not set",
+                                                "paid_at" => $invoice["paid_at"] ? (new DateTime($invoice["paid_at"]))->format("M d, Y H:i") : "Not paid",
+                                                "created_at" => (new DateTime($invoice["created_at"]))->format("M d, Y"),
+                                            ]); ?>)'>
                                             <i class="bi bi-eye"></i> View
                                         </button>
-                                        <button class="action-btn" onclick="alert('Edit invoice')">
+                                        <button class="action-btn" type="button"
+                                            onclick='openEditInvoiceModal(<?php echo json_encode([
+                                                "id" => $invoice["id"],
+                                                "amount" => $invoice["amount"],
+                                                "penalty" => $invoice["penalty"],
+                                                "status" => $invoice["status"],
+                                            ]); ?>)'>
                                             <i class="bi bi-pencil"></i> Edit
                                         </button>
                                     </td>
@@ -315,5 +369,69 @@ while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
             </div>
         </main>
     </div>
+
+    <!-- View Invoice Modal -->
+    <div id="viewInvoiceOverlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:999; align-items:center; justify-content:center;">
+        <div style="background:#1a1a3e; border:1px solid rgba(6,182,212,0.3); border-radius:16px; padding:28px; max-width:440px; width:90%;">
+            <h2 style="color:#F5F4FF; margin:0 0 20px 0;"><i class="bi bi-receipt"></i> Invoice Details</h2>
+            <div id="viewInvoiceBody" style="color:rgba(245,244,255,0.85); line-height:2;"></div>
+            <button type="button" class="action-btn" style="margin-top:16px;" onclick="document.getElementById('viewInvoiceOverlay').style.display='none'">Close</button>
+        </div>
+    </div>
+
+    <!-- Edit Invoice Modal -->
+    <div id="editInvoiceOverlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:999; align-items:center; justify-content:center;">
+        <div style="background:#1a1a3e; border:1px solid rgba(6,182,212,0.3); border-radius:16px; padding:28px; max-width:400px; width:90%;">
+            <h2 style="color:#F5F4FF; margin:0 0 20px 0;"><i class="bi bi-pencil-square"></i> Edit Invoice</h2>
+            <form method="POST">
+                <input type="hidden" name="action" value="edit_invoice">
+                <input type="hidden" name="invoice_id" id="edit_invoice_id">
+                <div class="mb-2">
+                    <label class="form-label" style="display:block; margin-bottom:6px; color:rgba(245,244,255,0.8);">Amount (₹)</label>
+                    <input type="number" step="0.01" class="form-input" name="amount" id="edit_amount" style="width:100%; padding:10px; border-radius:8px; border:1px solid rgba(6,182,212,0.3); background:rgba(255,255,255,0.05); color:#F5F4FF;" required>
+                </div>
+                <div class="mb-2" style="margin-top:12px;">
+                    <label class="form-label" style="display:block; margin-bottom:6px; color:rgba(245,244,255,0.8);">Penalty (₹)</label>
+                    <input type="number" step="0.01" class="form-input" name="penalty" id="edit_penalty" style="width:100%; padding:10px; border-radius:8px; border:1px solid rgba(6,182,212,0.3); background:rgba(255,255,255,0.05); color:#F5F4FF;">
+                </div>
+                <div class="mb-2" style="margin-top:12px;">
+                    <label class="form-label" style="display:block; margin-bottom:6px; color:rgba(245,244,255,0.8);">Status</label>
+                    <select class="form-select" name="status" id="edit_status" style="width:100%; padding:10px; border-radius:8px; border:1px solid rgba(6,182,212,0.3); background:rgba(255,255,255,0.05); color:#F5F4FF;" required>
+                        <option value="pending">Pending</option>
+                        <option value="paid">Paid</option>
+                        <option value="overdue">Overdue</option>
+                        <option value="cancelled">Cancelled</option>
+                    </select>
+                </div>
+                <div style="display:flex; gap:10px; margin-top:20px;">
+                    <button type="submit" class="submit-btn" style="flex:1;">Save Changes</button>
+                    <button type="button" class="action-btn" onclick="document.getElementById('editInvoiceOverlay').style.display='none'">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <script>
+        function openViewInvoiceModal(inv) {
+            document.getElementById('viewInvoiceBody').innerHTML = `
+                <div><strong>Invoice</strong> #${inv.id}</div>
+                <div><strong>Student:</strong> ${inv.name} (${inv.student_email})</div>
+                <div><strong>Fee Type:</strong> ${inv.fee_name}</div>
+                <div><strong>Amount:</strong> ₹${Number(inv.amount).toFixed(2)}</div>
+                <div><strong>Penalty:</strong> ₹${Number(inv.penalty).toFixed(2)}</div>
+                <div><strong>Status:</strong> ${inv.status}</div>
+                <div><strong>Due Date:</strong> ${inv.due_date}</div>
+                <div><strong>Paid At:</strong> ${inv.paid_at}</div>
+                <div><strong>Created:</strong> ${inv.created_at}</div>
+            `;
+            document.getElementById('viewInvoiceOverlay').style.display = 'flex';
+        }
+        function openEditInvoiceModal(inv) {
+            document.getElementById('edit_invoice_id').value = inv.id;
+            document.getElementById('edit_amount').value = inv.amount;
+            document.getElementById('edit_penalty').value = inv.penalty;
+            document.getElementById('edit_status').value = inv.status;
+            document.getElementById('editInvoiceOverlay').style.display = 'flex';
+        }
+    </script>
 </body>
 </html>

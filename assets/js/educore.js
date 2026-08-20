@@ -1,8 +1,13 @@
 // EduCore Global JavaScript
 
 function openAIHelpdesk() {
-    const modal = new bootstrap.Modal(document.getElementById('aiHelpdeskModal'));
-    modal.show();
+    const overlay = document.getElementById('aiHelpdeskOverlay');
+    if (overlay) overlay.style.display = 'flex';
+}
+
+function closeAIHelpdesk() {
+    const overlay = document.getElementById('aiHelpdeskOverlay');
+    if (overlay) overlay.style.display = 'none';
 }
 
 async function sendAIMessage() {

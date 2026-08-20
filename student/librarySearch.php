@@ -318,7 +318,15 @@ $borrowedBooks = $stmt->fetchAll(PDO::FETCH_ASSOC);
                         <?php foreach ($books as $book): 
                             $isAvailable = $book['available_copies'] > 0;
                         ?>
-                            <div class="book-card" onclick="alert('Request to borrow: ' + '<?php echo addslashes($book['book_title']); ?>')">
+                            <div class="book-card" onclick='openBookDetailModal(<?php echo json_encode([
+                                "title" => $book["book_title"],
+                                "author" => $book["author"],
+                                "isbn" => $book["isbn"] ?? "N/A",
+                                "category" => $book["category"],
+                                "shelf" => $book["shelf_location"] ?? "Ask librarian",
+                                "available" => (int) $book["available_copies"],
+                                "total" => (int) $book["total_copies"],
+                            ]); ?>)'>
                                 <div class="book-cover">
                                     <?php echo strtoupper(substr($book['book_title'], 0, 2)); ?>
                                 </div>
@@ -369,5 +377,33 @@ $borrowedBooks = $stmt->fetchAll(PDO::FETCH_ASSOC);
             </div>
         </main>
     </div>
+
+    <div id="bookDetailOverlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:999; align-items:center; justify-content:center;" onclick="if(event.target===this) document.getElementById('bookDetailOverlay').style.display='none'">
+        <div style="background:#1a1a3e; border:1px solid rgba(99,102,241,0.3); border-radius:16px; padding:28px; max-width:440px; width:90%;">
+            <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:16px;">
+                <h2 id="bd_title" style="color:#F5F4FF; margin:0;"></h2>
+                <button type="button" onclick="document.getElementById('bookDetailOverlay').style.display='none'" style="background:none; border:none; color:rgba(245,244,255,0.6); font-size:1.4rem; cursor:pointer;">&times;</button>
+            </div>
+            <p style="color:rgba(245,244,255,0.7);">by <span id="bd_author"></span></p>
+            <p style="color:rgba(245,244,255,0.6);"><i class="bi bi-tag"></i> <span id="bd_category"></span></p>
+            <p style="color:rgba(245,244,255,0.6);"><i class="bi bi-upc-scan"></i> ISBN: <span id="bd_isbn"></span></p>
+            <p style="color:rgba(245,244,255,0.6);"><i class="bi bi-signpost"></i> Shelf: <span id="bd_shelf"></span></p>
+            <p style="color:rgba(245,244,255,0.6);"><i class="bi bi-stack"></i> <span id="bd_copies"></span></p>
+            <p style="color:rgba(245,244,255,0.85); margin-top:14px; padding-top:14px; border-top:1px solid rgba(255,255,255,0.1); font-size:0.9rem;">
+                To check this book out, visit the library counter with your Student ID — circulation is handled in person via the library's QR desk.
+            </p>
+        </div>
+    </div>
+    <script>
+        function openBookDetailModal(b) {
+            document.getElementById('bd_title').textContent = b.title;
+            document.getElementById('bd_author').textContent = b.author;
+            document.getElementById('bd_category').textContent = b.category;
+            document.getElementById('bd_isbn').textContent = b.isbn;
+            document.getElementById('bd_shelf').textContent = b.shelf;
+            document.getElementById('bd_copies').textContent = b.available + ' of ' + b.total + ' copies available';
+            document.getElementById('bookDetailOverlay').style.display = 'flex';
+        }
+    </script>
 </body>
 </html>

@@ -142,9 +142,105 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                 <i class="bi bi-chat-dots"></i>
             </button>
         </div>
+        <a href="<?= htmlspecialchars(($portalBase ?? $basePath ?? '..') . '/profile.php', ENT_QUOTES, 'UTF-8') ?>" class="nav-item">
+            <?php
+            $sidebarPhoto = $user['photo'] ?? null;
+            $sidebarPhotoPath = $sidebarPhoto ? __DIR__ . '/../uploads/' . $sidebarPhoto : null;
+            ?>
+            <?php if ($sidebarPhotoPath && is_file($sidebarPhotoPath)): ?>
+                <img src="<?= htmlspecialchars(($portalBase ?? $basePath ?? '..') . '/uploads/' . $sidebarPhoto, ENT_QUOTES, 'UTF-8') ?>" style="width:20px; height:20px; border-radius:50%; object-fit:cover;" alt="">
+            <?php else: ?>
+                <i class="bi bi-person-circle"></i>
+            <?php endif; ?>
+            <span>My Profile</span>
+        </a>
         <a href="<?= htmlspecialchars(($portalBase ?? $basePath ?? '..') . '/logout.php', ENT_QUOTES, 'UTF-8') ?>" class="nav-item sidebar-logout">
             <i class="bi bi-box-arrow-right"></i>
             <span>Logout</span>
         </a>
     </div>
 </aside>
+
+<?php
+// The AI Helpdesk button above only works if this modal exists in the DOM.
+// It used to live only in includes/footer.php, which none of the pages
+// that include this sidebar ever include - so the button did nothing
+// anywhere. Rendering it here, next to the button, guarantees they're
+// always paired. Guard against double-render in case a page includes
+// both this file and footer.php.
+//
+// Built as a plain, self-contained overlay (no Bootstrap modal classes)
+// because this sidebar is shared by two different page templates and
+// only one of them (includes/header.php) loads Bootstrap's CSS - the
+// other (includes/portal_head.php) only loads Bootstrap Icons' font.
+// A Bootstrap ".modal.fade" with no Bootstrap CSS present has no
+// "display:none" default, so it rendered inline and always visible on
+// every portal_head.php-based page. Inline CSS below has no external
+// dependency either way, so it looks/works identically everywhere.
+if (!defined('EDUCORE_AI_MODAL_RENDERED')):
+    define('EDUCORE_AI_MODAL_RENDERED', true);
+    $aiModalBase = $portalBase ?? $basePath ?? '..';
+?>
+<style>
+    #aiHelpdeskOverlay {
+        display: none; position: fixed; inset: 0; z-index: 2000;
+        align-items: center; justify-content: center;
+        background: rgba(10, 10, 30, 0.65); backdrop-filter: blur(3px);
+    }
+    #aiHelpdeskOverlay .ai-modal-box {
+        background: #14142e; border: 1px solid rgba(99, 102, 241, 0.35);
+        border-radius: 16px; width: 92%; max-width: 640px;
+        max-height: 82vh; display: flex; flex-direction: column;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    }
+    #aiHelpdeskOverlay .ai-modal-header {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 18px 22px; border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    #aiHelpdeskOverlay .ai-modal-body { padding: 18px 22px; overflow-y: auto; flex: 1; }
+    #aiHelpdeskOverlay .ai-close-btn {
+        background: none; border: none; color: rgba(245,244,255,0.6);
+        font-size: 1.4rem; cursor: pointer; line-height: 1;
+    }
+    #aiHelpdeskOverlay .ai-close-btn:hover { color: #F5F4FF; }
+    #aiHelpdeskOverlay .ai-chat-input { display: flex; gap: 10px; margin-top: 14px; }
+    #aiHelpdeskOverlay .ai-chat-input input {
+        flex: 1; padding: 12px 14px; border-radius: 10px;
+        border: 1px solid rgba(99,102,241,0.3); background: rgba(255,255,255,0.05);
+        color: #F5F4FF; font-family: inherit;
+    }
+    #aiHelpdeskOverlay .btn-send {
+        padding: 0 18px; border: none; border-radius: 10px;
+        background: linear-gradient(120deg,#6366F1,#22D3EE); color: #fff; cursor: pointer;
+    }
+</style>
+<div id="aiHelpdeskOverlay" onclick="if(event.target===this) closeAIHelpdesk()">
+    <div class="ai-modal-box">
+        <div class="ai-modal-header">
+            <div style="display:flex; align-items:center; gap:12px;">
+                <div class="ai-avatar-lg"><i class="bi bi-stars"></i></div>
+                <div>
+                    <h5 style="margin:0; color:#F5F4FF;">EduCore AI Helpdesk</h5>
+                    <small style="color:rgba(245,244,255,0.5);">Powered by Gemini / Ollama</small>
+                </div>
+            </div>
+            <button type="button" class="ai-close-btn" onclick="closeAIHelpdesk()">&times;</button>
+        </div>
+        <div class="ai-modal-body">
+            <div id="aiChatMessages" class="ai-chat-messages">
+                <div class="ai-message bot">
+                    <div class="msg-avatar"><i class="bi bi-robot"></i></div>
+                    <div class="msg-bubble">Hello! I'm your EduCore AI assistant. Ask me about courses, exams, fees, library, or placements!</div>
+                </div>
+            </div>
+            <div class="ai-chat-input">
+                <input type="text" id="aiChatInput" placeholder="Type your question..." onkeydown="if(event.key==='Enter') sendAIMessage()">
+                <button class="btn-send" onclick="sendAIMessage()">
+                    <i class="bi bi-send-fill"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="<?= htmlspecialchars($aiModalBase, ENT_QUOTES, 'UTF-8') ?>/assets/js/educore.js"></script>
+<?php endif; ?>

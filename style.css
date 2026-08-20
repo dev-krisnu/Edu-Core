@@ -263,6 +263,43 @@ button { font-family: inherit; }
   box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.18);
 }
 
+/* ---- Selects, textareas & the .form-select class used across
+   faculty/admin/finance forms (was previously unstyled, causing
+   white text on the browser's default white background) ---- */
+select,
+textarea,
+.form-select,
+.field select,
+.field textarea {
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--surface-glass-brd);
+  background: var(--surface-field);
+  color: var(--ink-0);
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+select:focus,
+textarea:focus,
+.form-select:focus {
+  border-color: var(--cyan-400);
+  box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.18);
+}
+
+/* The dropdown popup list itself is rendered by the OS on most
+   browsers, so <option> needs explicit colors too or it reverts
+   to black-on-white / white-on-white depending on platform. */
+select option {
+  background: var(--bg-deep-2);
+  color: var(--ink-0);
+}
+
+textarea { resize: vertical; }
+
 .field-icon-btn {
   position: absolute;
   right: 14px;

@@ -42,6 +42,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['action'])) {
                 $messageType = 'error';
             }
         }
+    } elseif ($_POST['action'] === 'edit_exam') {
+        $exam_id = intval($_POST['exam_id'] ?? 0);
+        $exam_name = trim($_POST['exam_name'] ?? '');
+        $exam_date = trim($_POST['exam_date'] ?? '');
+        $exam_time = trim($_POST['exam_time'] ?? '');
+        $duration = intval($_POST['duration'] ?? 0);
+        $total_marks = intval($_POST['total_marks'] ?? 0);
+
+        if ($exam_id && $exam_name && $exam_date && $duration && $total_marks) {
+            try {
+                $stmt = $pdo->prepare("
+                    UPDATE exams SET title = ?, start_time = ?, duration_minutes = ?, total_marks = ?
+                    WHERE id = ? AND created_by = ?
+                ");
+                $stmt->execute([$exam_name, $exam_date . ' ' . $exam_time, $duration, $total_marks, $exam_id, $currentUser['id']]);
+                $message = 'Exam updated successfully!';
+                $messageType = 'success';
+            } catch (Exception $e) {
+                $message = 'Error: ' . $e->getMessage();
+                $messageType = 'error';
+            }
+        } else {
+            $message = 'All fields are required to update an exam.';
+            $messageType = 'error';
+        }
     }
 }
 
@@ -391,7 +416,15 @@ $exams = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                         </span>
                                     </td>
                                     <td>
-                                        <button class="action-btn" onclick="alert('Edit: ' + '<?php echo addslashes($exam['title']); ?>')">
+                                        <button class="action-btn" type="button"
+                                            onclick='openEditExamModal(<?php echo json_encode([
+                                                "id" => $exam["id"],
+                                                "title" => $exam["title"],
+                                                "date" => $examDate->format("Y-m-d"),
+                                                "time" => $examDate->format("H:i"),
+                                                "duration" => $exam["duration_minutes"],
+                                                "total_marks" => $exam["total_marks"],
+                                            ]); ?>)'>
                                             <i class="bi bi-pencil"></i> Edit
                                         </button>
                                     </td>
@@ -408,5 +441,40 @@ $exams = $stmt->fetchAll(PDO::FETCH_ASSOC);
             </div>
         </main>
     </div>
+
+    <div id="editExamOverlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:999; align-items:center; justify-content:center;">
+        <div style="background:#1a1a3e; border:1px solid rgba(139,92,246,0.3); border-radius:16px; padding:28px; max-width:440px; width:90%;">
+            <h2 style="color:#F5F4FF; margin:0 0 20px 0;"><i class="bi bi-pencil-square"></i> Edit Exam</h2>
+            <form method="POST">
+                <input type="hidden" name="action" value="edit_exam">
+                <input type="hidden" name="exam_id" id="ee_id">
+                <label style="display:block; margin-bottom:6px; color:rgba(245,244,255,0.8);">Exam Name</label>
+                <input type="text" name="exam_name" id="ee_name" style="width:100%; padding:10px; border-radius:8px; border:1px solid rgba(139,92,246,0.3); background:rgba(255,255,255,0.05); color:#F5F4FF; margin-bottom:12px;" required>
+                <label style="display:block; margin-bottom:6px; color:rgba(245,244,255,0.8);">Date</label>
+                <input type="date" name="exam_date" id="ee_date" style="width:100%; padding:10px; border-radius:8px; border:1px solid rgba(139,92,246,0.3); background:rgba(255,255,255,0.05); color:#F5F4FF; margin-bottom:12px;" required>
+                <label style="display:block; margin-bottom:6px; color:rgba(245,244,255,0.8);">Time</label>
+                <input type="time" name="exam_time" id="ee_time" style="width:100%; padding:10px; border-radius:8px; border:1px solid rgba(139,92,246,0.3); background:rgba(255,255,255,0.05); color:#F5F4FF; margin-bottom:12px;" required>
+                <label style="display:block; margin-bottom:6px; color:rgba(245,244,255,0.8);">Duration (minutes)</label>
+                <input type="number" name="duration" id="ee_duration" min="1" style="width:100%; padding:10px; border-radius:8px; border:1px solid rgba(139,92,246,0.3); background:rgba(255,255,255,0.05); color:#F5F4FF; margin-bottom:12px;" required>
+                <label style="display:block; margin-bottom:6px; color:rgba(245,244,255,0.8);">Total Marks</label>
+                <input type="number" name="total_marks" id="ee_marks" min="1" style="width:100%; padding:10px; border-radius:8px; border:1px solid rgba(139,92,246,0.3); background:rgba(255,255,255,0.05); color:#F5F4FF; margin-bottom:16px;" required>
+                <div style="display:flex; gap:10px;">
+                    <button type="submit" class="action-btn" style="flex:1; background:linear-gradient(120deg,#8B5CF6,#A78BFA);">Save Changes</button>
+                    <button type="button" class="action-btn" onclick="document.getElementById('editExamOverlay').style.display='none'">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <script>
+        function openEditExamModal(e) {
+            document.getElementById('ee_id').value = e.id;
+            document.getElementById('ee_name').value = e.title;
+            document.getElementById('ee_date').value = e.date;
+            document.getElementById('ee_time').value = e.time;
+            document.getElementById('ee_duration').value = e.duration;
+            document.getElementById('ee_marks').value = e.total_marks;
+            document.getElementById('editExamOverlay').style.display = 'flex';
+        }
+    </script>
 </body>
 </html>

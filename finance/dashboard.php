@@ -249,7 +249,7 @@ try {
                                 <?php if (!empty($recentInvoices)): ?>
                                     <?php foreach ($recentInvoices as $invoice): ?>
                                         <tr>
-                                            <td><?php echo htmlspecialchars($invoice['id'] ?? 'N/A'); ?></td>
+                                            <td><?php echo htmlspecialchars((string)($invoice['id'] ?? 'N/A')); ?></td>
                                             <td>₹<?php echo number_format((float)($invoice['amount'] ?? 0), 2); ?></td>
                                             <td>
                                                 <span class="status-<?php echo $invoice['status'] ?? 'pending'; ?>">
@@ -273,6 +273,5 @@ try {
         </main>
     </div>
 
-    <script src="../assets/js/educore.js"></script>
 </body>
 </html>

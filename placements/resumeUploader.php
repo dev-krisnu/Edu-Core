@@ -332,10 +332,11 @@ $studentsWithoutResumes = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                     <td><?php echo $uploadedDate->format('M d, Y'); ?></td>
                                     <td><?php echo $resume['applications']; ?> drive(s)</td>
                                     <td>
-                                        <button class="action-btn" onclick="alert('Download: ' + '<?php echo addslashes($resume['student_name']); ?>')">
+                                        <a href="../uploads/<?php echo htmlspecialchars($resume['file_path']); ?>" download class="action-btn" style="text-decoration:none; display:inline-block;">
                                             <i class="bi bi-download"></i> Download
-                                        </button>
-                                        <button class="action-btn" onclick="alert('Share with recruiters')">
+                                        </a>
+                                        <button class="action-btn" type="button"
+                                            onclick="shareResumeLink('<?php echo htmlspecialchars($resume['file_path'], ENT_QUOTES); ?>', '<?php echo addslashes($resume['student_name']); ?>')">
                                             <i class="bi bi-share"></i> Share
                                         </button>
                                     </td>
@@ -352,5 +353,23 @@ $studentsWithoutResumes = $stmt->fetchAll(PDO::FETCH_ASSOC);
             </div>
         </main>
     </div>
+    <script>
+        // No recruiter portal / email pipeline exists yet, so "Share"
+        // copies a direct link to the resume file that can be pasted
+        // into an email or message - real and usable, instead of a
+        // popup that claimed to share but sent nothing anywhere.
+        function shareResumeLink(filePath, studentName) {
+            const link = window.location.origin + '<?php echo dirname($_SERVER['PHP_SELF'], 2); ?>/uploads/' + filePath;
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(link).then(() => {
+                    alert(studentName + "'s resume link copied to clipboard:\n" + link);
+                }).catch(() => {
+                    prompt(studentName + "'s resume link (copy manually):", link);
+                });
+            } else {
+                prompt(studentName + "'s resume link (copy manually):", link);
+            }
+        }
+    </script>
 </body>
 </html>

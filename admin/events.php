@@ -18,7 +18,7 @@ $pdo = getDbConnection();
 $message = '';
 $messageType = '';
 
-// Handle event creation
+// Handle event creation/update/delete
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['action'])) {
     if ($_POST['action'] === 'create_event') {
         $event_name = trim($_POST['event_name']);
@@ -35,6 +35,47 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['action'])) {
                 ");
                 $stmt->execute([$event_name, $description, $event_date, $location, $category]);
                 $message = 'Event created successfully!';
+                $messageType = 'success';
+            } catch (Exception $e) {
+                $message = 'Error: ' . $e->getMessage();
+                $messageType = 'error';
+            }
+        }
+    } elseif ($_POST['action'] === 'edit_event') {
+        $event_id = intval($_POST['event_id'] ?? 0);
+        $event_name = trim($_POST['event_name'] ?? '');
+        $description = trim($_POST['description'] ?? '');
+        $event_date = trim($_POST['event_date'] ?? '');
+        $location = trim($_POST['location'] ?? '');
+        $category = trim($_POST['category'] ?? '');
+
+        if ($event_id && $event_name && $event_date && $location && $category) {
+            try {
+                $stmt = $pdo->prepare("
+                    UPDATE events SET event_name = ?, description = ?, event_date = ?, location = ?, category = ?
+                    WHERE id = ?
+                ");
+                $stmt->execute([$event_name, $description, $event_date, $location, $category, $event_id]);
+                $message = 'Event updated successfully!';
+                $messageType = 'success';
+            } catch (Exception $e) {
+                $message = 'Error: ' . $e->getMessage();
+                $messageType = 'error';
+            }
+        } else {
+            $message = 'All fields are required to update an event.';
+            $messageType = 'error';
+        }
+    } elseif ($_POST['action'] === 'delete_event') {
+        $event_id = intval($_POST['event_id'] ?? 0);
+        if ($event_id) {
+            try {
+                // event_attendance rows reference this event; clear them
+                // first so the delete doesn't fail on the FK constraint.
+                $pdo->prepare("DELETE FROM event_attendance WHERE event_id = ?")->execute([$event_id]);
+                $stmt = $pdo->prepare("DELETE FROM events WHERE id = ?");
+                $stmt->execute([$event_id]);
+                $message = 'Event deleted successfully!';
                 $messageType = 'success';
             } catch (Exception $e) {
                 $message = 'Error: ' . $e->getMessage();
@@ -397,12 +438,24 @@ while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
                                         </span>
                                     </td>
                                     <td>
-                                        <button class="action-btn" onclick="alert('Edit: ' + '<?php echo addslashes($event['event_name']); ?>')">
+                                        <button class="action-btn" type="button"
+                                            onclick='openEditEventModal(<?php echo json_encode([
+                                                "id" => $event["id"],
+                                                "event_name" => $event["event_name"],
+                                                "description" => $event["description"],
+                                                "event_date" => (new DateTime($event["event_date"]))->format("Y-m-d\TH:i"),
+                                                "location" => $event["location"],
+                                                "category" => $event["category"],
+                                            ]); ?>)'>
                                             <i class="bi bi-pencil"></i> Edit
                                         </button>
-                                        <button class="action-btn" onclick="alert('Delete: ' + '<?php echo addslashes($event['event_name']); ?>')">
-                                            <i class="bi bi-trash"></i> Delete
-                                        </button>
+                                        <form method="POST" style="display:inline;" onsubmit="return confirm('Delete <?php echo addslashes($event['event_name']); ?>? This cannot be undone.');">
+                                            <input type="hidden" name="action" value="delete_event">
+                                            <input type="hidden" name="event_id" value="<?php echo (int) $event['id']; ?>">
+                                            <button type="submit" class="action-btn">
+                                                <i class="bi bi-trash"></i> Delete
+                                            </button>
+                                        </form>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
@@ -417,5 +470,64 @@ while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
             </div>
         </main>
     </div>
+
+    <!-- Edit Event Modal -->
+    <div id="editEventOverlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:999; align-items:center; justify-content:center;">
+        <div style="background:#1a1a3e; border:1px solid rgba(239,68,68,0.3); border-radius:16px; padding:28px; max-width:520px; width:90%;">
+            <h2 style="color:#F5F4FF; margin:0 0 20px 0;"><i class="bi bi-pencil-square"></i> Edit Event</h2>
+            <form method="POST" id="editEventForm">
+                <input type="hidden" name="action" value="edit_event">
+                <input type="hidden" name="event_id" id="edit_event_id">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label">Event Name</label>
+                        <input type="text" class="form-input" name="event_name" id="edit_event_name" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Category</label>
+                        <select class="form-select" name="category" id="edit_category" required>
+                            <option value="">Select Category</option>
+                            <option value="academic">Academic</option>
+                            <option value="sports">Sports</option>
+                            <option value="cultural">Cultural</option>
+                            <option value="workshop">Workshop</option>
+                            <option value="seminar">Seminar</option>
+                            <option value="conference">Conference</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Event Date</label>
+                        <input type="datetime-local" class="form-input" name="event_date" id="edit_event_date" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Location</label>
+                        <input type="text" class="form-input" name="location" id="edit_location" required>
+                    </div>
+                </div>
+                <div class="form-group" style="margin-bottom: 16px;">
+                    <label class="form-label">Description</label>
+                    <textarea class="form-textarea" name="description" id="edit_description"></textarea>
+                </div>
+                <div style="display:flex; gap:10px;">
+                    <button type="submit" class="submit-btn" style="flex:1;"><i class="bi bi-check-circle"></i> Save Changes</button>
+                    <button type="button" class="action-btn" style="flex:0 0 auto;" onclick="closeEditEventModal()">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <script>
+        function openEditEventModal(event) {
+            document.getElementById('edit_event_id').value = event.id;
+            document.getElementById('edit_event_name').value = event.event_name;
+            document.getElementById('edit_category').value = event.category;
+            document.getElementById('edit_event_date').value = event.event_date;
+            document.getElementById('edit_location').value = event.location;
+            document.getElementById('edit_description').value = event.description || '';
+            document.getElementById('editEventOverlay').style.display = 'flex';
+        }
+        function closeEditEventModal() {
+            document.getElementById('editEventOverlay').style.display = 'none';
+        }
+    </script>
 </body>
 </html>

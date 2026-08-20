@@ -36,12 +36,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['topic'])) {
         $ai = AIFactory::create();
         $questions = $ai->generateQuestions($topic, $count, $difficulty);
 
+        // Normalize AI output to the shape the frontend actually expects:
+        // { question, options: [string, ...], correct_answer: <index> }.
+        // Both GeminiAI's raw JSON and the DemoAI fallback previously
+        // returned question_text + an associative options object keyed
+        // A/B/C/D with correct_answer as a letter - the JS did
+        // `(q.options || []).map(...)`, which throws when options is an
+        // object rather than an array, silently breaking rendering
+        // after a response had already come back successfully.
+        $normalized = [];
+        foreach ($questions as $q) {
+            $questionText = $q['question'] ?? $q['question_text'] ?? 'Question';
+            $rawOptions = $q['options'] ?? [];
+            $correctRaw = $q['correct_answer'] ?? null;
+
+            if (is_array($rawOptions) && array_keys($rawOptions) !== range(0, count($rawOptions) - 1)) {
+                // Associative (A/B/C/D) - flatten to an indexed array and
+                // resolve the letter-keyed correct answer to its index.
+                $letters = array_keys($rawOptions);
+                $optionsList = array_values($rawOptions);
+                $correctIndex = is_string($correctRaw) ? array_search(strtoupper($correctRaw), array_map('strtoupper', $letters), true) : $correctRaw;
+            } else {
+                $optionsList = array_values((array) $rawOptions);
+                $correctIndex = is_numeric($correctRaw) ? (int) $correctRaw : 0;
+            }
+
+            $normalized[] = [
+                'question' => $questionText,
+                'options' => $optionsList,
+                'correct_answer' => $correctIndex !== false ? $correctIndex : 0,
+                'explanation' => $q['explanation'] ?? '',
+            ];
+        }
+
         echo json_encode([
             'success' => true,
-            'questions' => $questions,
+            'questions' => $normalized,
             'topic' => $topic,
             'difficulty' => $difficulty,
-            'count' => count($questions)
+            'count' => count($normalized)
         ]);
     } catch (Exception $e) {
         echo json_encode([
@@ -49,6 +82,52 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['topic'])) {
             'error' => 'Failed to generate questions: ' . $e->getMessage()
         ]);
     }
+    exit;
+}
+
+// Save a generated question into the question bank so it's actually
+// reusable (the "Save Question" button previously just alert()'d
+// "Question saved" with no INSERT anywhere behind it).
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['save_question'])) {
+    header('Content-Type: application/json');
+
+    $questionText = trim($_POST['question_text'] ?? '');
+    $optionsJson = $_POST['options'] ?? '[]';
+    $correctAnswer = trim($_POST['correct_answer'] ?? '');
+    $difficulty = trim($_POST['difficulty'] ?? 'medium');
+    $courseId = !empty($_POST['course_id']) ? (int) $_POST['course_id'] : null;
+
+    if (empty($questionText)) {
+        echo json_encode(['success' => false, 'error' => 'Question text is required.']);
+        exit;
+    }
+
+    // Validate the options are actually JSON before storing (the column
+    // is JSON-typed) rather than trusting the client blindly.
+    json_decode($optionsJson);
+    if (json_last_error() !== JSON_ERROR_NONE) {
+        $optionsJson = '[]';
+    }
+
+    try {
+        $stmt = $pdo->prepare("
+            INSERT INTO exam_questions (course_id, created_by, question_text, question_type, difficulty, options, correct_answer, marks)
+            VALUES (?, ?, ?, 'mcq', ?, ?, ?, 5)
+        ");
+        $stmt->execute([$courseId, $currentUser['id'], $questionText, $difficulty, $optionsJson, $correctAnswer]);
+        echo json_encode(['success' => true, 'message' => 'Question saved to your question bank.']);
+    } catch (Exception $e) {
+        echo json_encode(['success' => false, 'error' => 'Failed to save: ' . $e->getMessage()]);
+    }
+    exit;
+}
+
+// Delete an already-saved question from this page's own list too
+// (was previously an inert button with no handler at all).
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['delete_question_id'])) {
+    $qid = (int) $_POST['delete_question_id'];
+    $pdo->prepare("DELETE FROM exam_questions WHERE id = ? AND created_by = ?")->execute([$qid, $currentUser['id']]);
+    header('Location: aiQuestionGeneration.php');
     exit;
 }
 
@@ -403,12 +482,15 @@ $existingQuestions = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                     <strong>Level:</strong> <?php echo ucfirst($difficulty); ?>
                                 </div>
                                 <div class="action-buttons">
-                                    <button class="action-btn btn-save" onclick="alert('Question saved')">
-                                        <i class="bi bi-bookmark"></i> Use in Exam
-                                    </button>
-                                    <button class="action-btn btn-delete">
-                                        <i class="bi bi-trash"></i> Delete
-                                    </button>
+                                    <a href="questionBank.php" class="action-btn btn-save" style="text-decoration:none; display:inline-block;">
+                                        <i class="bi bi-bookmark"></i> Manage in Question Bank
+                                    </a>
+                                    <form method="POST" style="display:inline;" onsubmit="return confirm('Delete this question?');">
+                                        <input type="hidden" name="delete_question_id" value="<?php echo (int) $q['id']; ?>">
+                                        <button type="submit" class="action-btn btn-delete">
+                                            <i class="bi bi-trash"></i> Delete
+                                        </button>
+                                    </form>
                                 </div>
                             </div>
                         <?php endforeach; ?>
@@ -432,13 +514,18 @@ $existingQuestions = $stmt->fetchAll(PDO::FETCH_ASSOC);
             document.getElementById('loading').style.display = 'block';
 
             try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 35000); // don't hang forever
+
                 const response = await fetch('./aiQuestionGeneration.php', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                     body: 'topic=' + encodeURIComponent(topic) + 
                           '&difficulty=' + encodeURIComponent(difficulty) +
-                          '&count=' + count
+                          '&count=' + count,
+                    signal: controller.signal
                 });
+                clearTimeout(timeoutId);
 
                 const data = await response.json();
                 document.getElementById('loading').style.display = 'none';
@@ -451,7 +538,11 @@ $existingQuestions = $stmt->fetchAll(PDO::FETCH_ASSOC);
             } catch (err) {
                 document.getElementById('loading').style.display = 'none';
                 console.error('Error:', err);
-                alert('Failed to generate questions');
+                if (err.name === 'AbortError') {
+                    alert('The AI service took too long to respond. Please try again.');
+                } else {
+                    alert('Failed to generate questions');
+                }
             }
         }
 
@@ -478,7 +569,7 @@ $existingQuestions = $stmt->fetchAll(PDO::FETCH_ASSOC);
                     <div class="question-text">${q.question || 'Question ' + (index + 1)}</div>
                     <div class="options-list">${optionsHtml}</div>
                     <div class="action-buttons">
-                        <button class="action-btn btn-save" onclick="alert('Question saved')">
+                        <button class="action-btn btn-save" onclick="saveGeneratedQuestion(this, ${JSON.stringify(JSON.stringify(q))}, ${JSON.stringify(difficulty)})">
                             <i class="bi bi-check"></i> Save
                         </button>
                         <button class="action-btn btn-delete" onclick="this.parentElement.parentElement.remove()">
@@ -489,6 +580,41 @@ $existingQuestions = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 
                 container.appendChild(qDiv);
             });
+        }
+
+        async function saveGeneratedQuestion(btn, questionJson, difficulty) {
+            const q = JSON.parse(questionJson);
+            btn.disabled = true;
+            btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Saving...';
+
+            try {
+                const body = new URLSearchParams();
+                body.set('save_question', '1');
+                body.set('question_text', q.question || '');
+                body.set('options', JSON.stringify(q.options || []));
+                body.set('correct_answer', (q.options && q.options[q.correct_answer] !== undefined) ? q.options[q.correct_answer] : '');
+                body.set('difficulty', difficulty || 'medium');
+
+                const res = await fetch('./aiQuestionGeneration.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: body.toString()
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    btn.innerHTML = '<i class="bi bi-check-circle-fill"></i> Saved';
+                    btn.style.opacity = '0.7';
+                } else {
+                    alert('Error: ' + data.error);
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="bi bi-check"></i> Save';
+                }
+            } catch (err) {
+                alert('Failed to save question.');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-check"></i> Save';
+            }
         }
     </script>
 </body>

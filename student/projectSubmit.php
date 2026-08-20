@@ -25,6 +25,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_FILES['project_file'])) {
     try {
         $result = $uploadHandler->upload($_FILES['project_file'], 'projects');
         if ($result['success']) {
+            $title = trim($_POST['project_title'] ?? 'Untitled Project');
+            $courseInput = trim($_POST['course'] ?? '');
+            $description = trim($_POST['description'] ?? '');
+
+            // "Course" is a free-text field in the form; match it to a
+            // real course by code or title if possible, otherwise leave
+            // course_id null rather than losing the submission.
+            $courseId = null;
+            if ($courseInput !== '') {
+                $courseStmt = $pdo->prepare("SELECT id FROM courses WHERE code = ? OR title LIKE ? LIMIT 1");
+                $courseStmt->execute([$courseInput, '%' . $courseInput . '%']);
+                $courseId = $courseStmt->fetchColumn() ?: null;
+            }
+
+            $insertStmt = $pdo->prepare("
+                INSERT INTO project_submissions (student_id, course_id, title, description, file_path)
+                VALUES (?, ?, ?, ?, ?)
+            ");
+            $insertStmt->execute([$currentUser['id'], $courseId, $title, $description, $result['file']]);
+
             $message = 'Project submitted successfully!';
             $messageType = 'success';
         } else {
@@ -50,13 +70,18 @@ $projects = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Fetch submitted projects
 $stmt = $pdo->prepare("
-    SELECT * FROM system_logs 
-    WHERE user_id = ? AND action LIKE 'project_submit%'
-    ORDER BY created_at DESC
+    SELECT ps.*, c.title AS course_title
+    FROM project_submissions ps
+    LEFT JOIN courses c ON c.id = ps.course_id
+    WHERE ps.student_id = ?
+    ORDER BY ps.submitted_at DESC
     LIMIT 10
 ");
 $stmt->execute([$currentUser['id']]);
 $submissions = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Fetch courses for the dropdown
+$courseList = $pdo->query("SELECT id, code, title FROM courses ORDER BY code")->fetchAll(PDO::FETCH_ASSOC);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -333,7 +358,14 @@ $submissions = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
                             <div class="form-group">
                                 <label class="form-label">Course/Subject</label>
-                                <input type="text" class="form-input" name="course" placeholder="Select course" required>
+                                <select class="form-input form-select" name="course" required>
+                                    <option value="">Select course</option>
+                                    <?php foreach ($courseList as $c): ?>
+                                        <option value="<?php echo htmlspecialchars($c['code']); ?>">
+                                            <?php echo htmlspecialchars($c['code'] . ' — ' . $c['title']); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
                             </div>
 
                             <div class="form-group">
@@ -403,20 +435,31 @@ $submissions = $stmt->fetchAll(PDO::FETCH_ASSOC);
                         <thead>
                             <tr>
                                 <th>Project Name</th>
+                                <th>Course</th>
                                 <th>Submitted Date</th>
                                 <th>Status</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <?php foreach ($submissions as $submission): 
-                                $submittedDate = new DateTime($submission['created_at']);
+                            <?php
+                            $statusColors = [
+                                'submitted'    => ['#6EE7B7', 'bi-check-circle', 'Submitted'],
+                                'under_review' => ['#FDBA74', 'bi-hourglass-split', 'Under Review'],
+                                'approved'     => ['#6EE7B7', 'bi-patch-check', 'Approved'],
+                                'rejected'     => ['#FCA5A5', 'bi-x-circle', 'Rejected'],
+                            ];
+                            ?>
+                            <?php foreach ($submissions as $submission):
+                                $submittedDate = new DateTime($submission['submitted_at']);
+                                [$color, $icon, $label] = $statusColors[$submission['status']] ?? $statusColors['submitted'];
                             ?>
                                 <tr>
-                                    <td><i class="bi bi-file-earmark"></i> Project #<?php echo substr($submission['id'], 0, 6); ?></td>
+                                    <td><i class="bi bi-file-earmark"></i> <?php echo htmlspecialchars($submission['title']); ?></td>
+                                    <td><?php echo htmlspecialchars($submission['course_title'] ?? '—'); ?></td>
                                     <td><?php echo $submittedDate->format('M d, Y H:i'); ?></td>
                                     <td>
-                                        <span style="color: #6EE7B7; font-weight: 600;">
-                                            <i class="bi bi-check-circle"></i> Submitted
+                                        <span style="color: <?php echo $color; ?>; font-weight: 600;">
+                                            <i class="bi <?php echo $icon; ?>"></i> <?php echo $label; ?>
                                         </span>
                                     </td>
                                 </tr>

@@ -372,6 +372,5 @@ try {
         </main>
     </div>
 
-    <script src="../assets/js/educore.js"></script>
 </body>
 </html>

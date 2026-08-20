@@ -15,6 +15,25 @@ requireRole(['faculty']);
 $currentUser = getCurrentUser();
 $pdo = getDbConnection();
 
+$message = '';
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['action'])) {
+    $qid = (int) ($_POST['question_id'] ?? 0);
+    if ($_POST['action'] === 'delete_question' && $qid) {
+        $del = $pdo->prepare("DELETE FROM exam_questions WHERE id = ? AND created_by = ?");
+        $del->execute([$qid, $currentUser['id']]);
+        $message = 'Question deleted.';
+    } elseif ($_POST['action'] === 'edit_question' && $qid) {
+        $text = trim($_POST['question_text'] ?? '');
+        $difficulty = $_POST['difficulty'] ?? 'medium';
+        $marks = (int) ($_POST['marks'] ?? 5);
+        if ($text) {
+            $upd = $pdo->prepare("UPDATE exam_questions SET question_text = ?, difficulty = ?, marks = ? WHERE id = ? AND created_by = ?");
+            $upd->execute([$text, $difficulty, $marks, $qid, $currentUser['id']]);
+            $message = 'Question updated.';
+        }
+    }
+}
+
 $difficulty_filter = trim($_GET['difficulty'] ?? '');
 $course_filter = intval($_GET['course'] ?? 0);
 
@@ -323,15 +342,33 @@ while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
                                     <td><?php echo $question['times_used']; ?></td>
                                     <td><?php echo $createdDate->format('M d, Y'); ?></td>
                                     <td>
-                                        <button class="action-btn" onclick="alert('View: ' + '<?php echo addslashes(substr($question['question_text'], 0, 30)); ?>')">
+                                        <button class="action-btn" type="button"
+                                            onclick='openViewQuestionModal(<?php echo json_encode([
+                                                "question_text" => $question["question_text"],
+                                                "question_type" => $question["question_type"],
+                                                "options" => $question["options"],
+                                                "correct_answer" => $question["correct_answer"],
+                                                "marks" => $question["marks"],
+                                                "difficulty" => $question["difficulty"],
+                                            ]); ?>)'>
                                             <i class="bi bi-eye"></i> View
                                         </button>
-                                        <button class="action-btn" onclick="alert('Edit: ' + '<?php echo addslashes(substr($question['question_text'], 0, 30)); ?>')">
+                                        <button class="action-btn" type="button"
+                                            onclick='openEditQuestionModal(<?php echo json_encode([
+                                                "id" => $question["id"],
+                                                "question_text" => $question["question_text"],
+                                                "difficulty" => $question["difficulty"],
+                                                "marks" => $question["marks"],
+                                            ]); ?>)'>
                                             <i class="bi bi-pencil"></i> Edit
                                         </button>
-                                        <button class="action-btn" onclick="alert('Delete')">
-                                            <i class="bi bi-trash"></i> Delete
-                                        </button>
+                                        <form method="POST" style="display:inline;" onsubmit="return confirm('Delete this question? This cannot be undone.');">
+                                            <input type="hidden" name="action" value="delete_question">
+                                            <input type="hidden" name="question_id" value="<?php echo (int) $question['id']; ?>">
+                                            <button type="submit" class="action-btn">
+                                                <i class="bi bi-trash"></i> Delete
+                                            </button>
+                                        </form>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
@@ -346,5 +383,67 @@ while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
             </div>
         </main>
     </div>
+
+    <div id="viewQuestionOverlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:999; align-items:center; justify-content:center;" onclick="if(event.target===this) document.getElementById('viewQuestionOverlay').style.display='none'">
+        <div style="background:#1a1a3e; border:1px solid rgba(139,92,246,0.3); border-radius:16px; padding:28px; max-width:520px; width:90%; max-height:80vh; overflow-y:auto;">
+            <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:16px;">
+                <h2 style="color:#F5F4FF; margin:0;">Question Detail</h2>
+                <button type="button" onclick="document.getElementById('viewQuestionOverlay').style.display='none'" style="background:none; border:none; color:rgba(245,244,255,0.6); font-size:1.4rem; cursor:pointer;">&times;</button>
+            </div>
+            <p style="color:rgba(245,244,255,0.85); line-height:1.6;" id="vq_text"></p>
+            <div id="vq_options" style="margin:12px 0; color:rgba(245,244,255,0.75);"></div>
+            <p style="color:rgba(245,244,255,0.6);"><strong>Type:</strong> <span id="vq_type"></span> · <strong>Difficulty:</strong> <span id="vq_difficulty"></span> · <strong>Marks:</strong> <span id="vq_marks"></span></p>
+        </div>
+    </div>
+
+    <div id="editQuestionOverlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:999; align-items:center; justify-content:center;">
+        <div style="background:#1a1a3e; border:1px solid rgba(139,92,246,0.3); border-radius:16px; padding:28px; max-width:480px; width:90%;">
+            <h2 style="color:#F5F4FF; margin:0 0 20px 0;"><i class="bi bi-pencil-square"></i> Edit Question</h2>
+            <form method="POST">
+                <input type="hidden" name="action" value="edit_question">
+                <input type="hidden" name="question_id" id="eq_id">
+                <label style="display:block; margin-bottom:6px; color:rgba(245,244,255,0.8);">Question Text</label>
+                <textarea name="question_text" id="eq_text" rows="4" style="width:100%; padding:10px; border-radius:8px; border:1px solid rgba(139,92,246,0.3); background:rgba(255,255,255,0.05); color:#F5F4FF; font-family:inherit; margin-bottom:12px;" required></textarea>
+                <label style="display:block; margin-bottom:6px; color:rgba(245,244,255,0.8);">Difficulty</label>
+                <select name="difficulty" id="eq_difficulty" style="width:100%; padding:10px; border-radius:8px; border:1px solid rgba(139,92,246,0.3); background:rgba(255,255,255,0.05); color:#F5F4FF; margin-bottom:12px;">
+                    <option value="easy">Easy</option>
+                    <option value="medium">Medium</option>
+                    <option value="hard">Hard</option>
+                </select>
+                <label style="display:block; margin-bottom:6px; color:rgba(245,244,255,0.8);">Marks</label>
+                <input type="number" name="marks" id="eq_marks" min="1" style="width:100%; padding:10px; border-radius:8px; border:1px solid rgba(139,92,246,0.3); background:rgba(255,255,255,0.05); color:#F5F4FF; margin-bottom:16px;" required>
+                <div style="display:flex; gap:10px;">
+                    <button type="submit" class="action-btn" style="flex:1; background:linear-gradient(120deg,#8B5CF6,#A78BFA);">Save Changes</button>
+                    <button type="button" class="action-btn" onclick="document.getElementById('editQuestionOverlay').style.display='none'">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <script>
+        function openViewQuestionModal(q) {
+            document.getElementById('vq_text').textContent = q.question_text;
+            document.getElementById('vq_type').textContent = (q.question_type || 'mcq').toUpperCase();
+            document.getElementById('vq_difficulty').textContent = q.difficulty;
+            document.getElementById('vq_marks').textContent = q.marks;
+
+            let optionsHtml = '';
+            if (q.options) {
+                try {
+                    const opts = typeof q.options === 'string' ? JSON.parse(q.options) : q.options;
+                    const list = Array.isArray(opts) ? opts : Object.values(opts);
+                    optionsHtml = '<strong>Options:</strong><ul>' + list.map(o => `<li>${o}${q.correct_answer && (o === q.correct_answer) ? ' ✓' : ''}</li>`).join('') + '</ul>';
+                } catch (e) { /* not JSON, skip */ }
+            }
+            document.getElementById('vq_options').innerHTML = optionsHtml;
+            document.getElementById('viewQuestionOverlay').style.display = 'flex';
+        }
+        function openEditQuestionModal(q) {
+            document.getElementById('eq_id').value = q.id;
+            document.getElementById('eq_text').value = q.question_text;
+            document.getElementById('eq_difficulty').value = q.difficulty;
+            document.getElementById('eq_marks').value = q.marks;
+            document.getElementById('editQuestionOverlay').style.display = 'flex';
+        }
+    </script>
 </body>
 </html>

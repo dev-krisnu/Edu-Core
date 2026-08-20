@@ -18,7 +18,7 @@ $pdo = getDbConnection();
 $message = '';
 $messageType = '';
 
-// Handle course creation/update
+// Handle course creation/update/delete
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['action'])) {
     if ($_POST['action'] === 'add_course') {
         $course_name = trim($_POST['course_name']);
@@ -36,6 +36,57 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['action'])) {
                 $stmt->execute([$course_name, $course_code, $faculty_id, $credits, $semester]);
                 $message = 'Course added successfully!';
                 $messageType = 'success';
+            } catch (Exception $e) {
+                $message = 'Error: ' . $e->getMessage();
+                $messageType = 'error';
+            }
+        }
+    } elseif ($_POST['action'] === 'edit_course') {
+        $course_id = intval($_POST['course_id'] ?? 0);
+        $course_name = trim($_POST['course_name'] ?? '');
+        $course_code = trim($_POST['course_code'] ?? '');
+        $faculty_id = intval($_POST['faculty_id'] ?? 0);
+        $credits = intval($_POST['credits'] ?? 0);
+        $semester = intval($_POST['semester'] ?? 0);
+
+        if ($course_id && $course_name && $course_code && $faculty_id && $credits && $semester) {
+            try {
+                $stmt = $pdo->prepare("
+                    UPDATE courses SET title = ?, code = ?, faculty_id = ?, credits = ?, semester = ?
+                    WHERE id = ?
+                ");
+                $stmt->execute([$course_name, $course_code, $faculty_id, $credits, $semester, $course_id]);
+                $message = 'Course updated successfully!';
+                $messageType = 'success';
+            } catch (Exception $e) {
+                $message = 'Error: ' . $e->getMessage();
+                $messageType = 'error';
+            }
+        } else {
+            $message = 'All fields are required to update a course.';
+            $messageType = 'error';
+        }
+    } elseif ($_POST['action'] === 'delete_course') {
+        $course_id = intval($_POST['course_id'] ?? 0);
+        if ($course_id) {
+            try {
+                // Courses this deep in the schema have dependents
+                // (enrollments, exams, resources, submissions). Rather
+                // than a hard delete that could orphan/FK-fail, block
+                // deletion when real dependents exist and say why.
+                $depStmt = $pdo->prepare("SELECT COUNT(*) FROM course_enrollments WHERE course_id = ?");
+                $depStmt->execute([$course_id]);
+                $enrollCount = (int) $depStmt->fetchColumn();
+
+                if ($enrollCount > 0) {
+                    $message = "Can't delete: {$enrollCount} student(s) are still enrolled in this course. Remove enrollments first.";
+                    $messageType = 'error';
+                } else {
+                    $stmt = $pdo->prepare("DELETE FROM courses WHERE id = ?");
+                    $stmt->execute([$course_id]);
+                    $message = 'Course deleted successfully!';
+                    $messageType = 'success';
+                }
             } catch (Exception $e) {
                 $message = 'Error: ' . $e->getMessage();
                 $messageType = 'error';
@@ -372,12 +423,24 @@ $faculty = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                     <td><?php echo $course['credits']; ?></td>
                                     <td><?php echo $course['enrolled_students']; ?> students</td>
                                     <td>
-                                        <button class="action-btn" onclick="alert('Edit: ' + '<?php echo addslashes($course['code']); ?>')">
+                                        <button class="action-btn" type="button"
+                                            onclick='openEditCourseModal(<?php echo json_encode([
+                                                "id" => $course["id"],
+                                                "title" => $course["title"],
+                                                "code" => $course["code"],
+                                                "faculty_id" => $course["faculty_id"],
+                                                "credits" => $course["credits"],
+                                                "semester" => $course["semester"],
+                                            ]); ?>)'>
                                             <i class="bi bi-pencil"></i> Edit
                                         </button>
-                                        <button class="action-btn" onclick="alert('Delete: ' + '<?php echo addslashes($course['code']); ?>')">
-                                            <i class="bi bi-trash"></i> Delete
-                                        </button>
+                                        <form method="POST" style="display:inline;" onsubmit="return confirm('Delete <?php echo addslashes($course['code']); ?>? This cannot be undone.');">
+                                            <input type="hidden" name="action" value="delete_course">
+                                            <input type="hidden" name="course_id" value="<?php echo (int) $course['id']; ?>">
+                                            <button type="submit" class="action-btn">
+                                                <i class="bi bi-trash"></i> Delete
+                                            </button>
+                                        </form>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
@@ -392,5 +455,66 @@ $faculty = $stmt->fetchAll(PDO::FETCH_ASSOC);
             </div>
         </main>
     </div>
+
+    <!-- Edit Course Modal (plain CSS modal - this page doesn't load Bootstrap JS) -->
+    <div id="editCourseOverlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:999; align-items:center; justify-content:center;">
+        <div style="background:#1a1a3e; border:1px solid rgba(239,68,68,0.3); border-radius:16px; padding:28px; max-width:480px; width:90%;">
+            <h2 style="color:#F5F4FF; margin:0 0 20px 0;"><i class="bi bi-pencil-square"></i> Edit Course</h2>
+            <form method="POST" id="editCourseForm">
+                <input type="hidden" name="action" value="edit_course">
+                <input type="hidden" name="course_id" id="edit_course_id">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label">Course Name</label>
+                        <input type="text" class="form-input" name="course_name" id="edit_course_name" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Course Code</label>
+                        <input type="text" class="form-input" name="course_code" id="edit_course_code" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Assign Faculty</label>
+                        <select class="form-select" name="faculty_id" id="edit_faculty_id" required>
+                            <option value="">Select Faculty</option>
+                            <?php foreach ($faculty as $f): ?>
+                                <option value="<?php echo $f['id']; ?>"><?php echo htmlspecialchars($f['name']); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Credits</label>
+                        <input type="number" class="form-input" name="credits" id="edit_credits" min="1" max="10" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Semester</label>
+                        <select class="form-select" name="semester" id="edit_semester" required>
+                            <option value="">Select Semester</option>
+                            <?php for ($i = 1; $i <= 8; $i++): ?>
+                                <option value="<?php echo $i; ?>">Semester <?php echo $i; ?></option>
+                            <?php endfor; ?>
+                        </select>
+                    </div>
+                </div>
+                <div style="display:flex; gap:10px; margin-top:10px;">
+                    <button type="submit" class="submit-btn" style="flex:1;"><i class="bi bi-check-circle"></i> Save Changes</button>
+                    <button type="button" class="action-btn" style="flex:0 0 auto;" onclick="closeEditCourseModal()">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <script>
+        function openEditCourseModal(course) {
+            document.getElementById('edit_course_id').value = course.id;
+            document.getElementById('edit_course_name').value = course.title;
+            document.getElementById('edit_course_code').value = course.code;
+            document.getElementById('edit_faculty_id').value = course.faculty_id;
+            document.getElementById('edit_credits').value = course.credits;
+            document.getElementById('edit_semester').value = course.semester;
+            document.getElementById('editCourseOverlay').style.display = 'flex';
+        }
+        function closeEditCourseModal() {
+            document.getElementById('editCourseOverlay').style.display = 'none';
+        }
+    </script>
 </body>
 </html>

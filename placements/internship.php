@@ -308,7 +308,18 @@ while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
                                         </span>
                                     </td>
                                     <td>
-                                        <button class="action-btn" onclick="alert('View: ' + '<?php echo addslashes($drive['company_name']); ?>')">
+                                        <button class="action-btn" type="button"
+                                            onclick='openDriveDetailModal(<?php echo json_encode([
+                                                "company_name" => $drive["company_name"],
+                                                "job_title" => $drive["job_title"],
+                                                "description" => $drive["description"] ?? "No description provided.",
+                                                "min_cgpa" => $drive["min_cgpa"],
+                                                "package_lpa" => number_format((float) ($drive["package_lpa"] ?? 0), 2),
+                                                "drive_date" => $driveDate->format("M d, Y"),
+                                                "status" => ucfirst($drive["status"] ?? "upcoming"),
+                                                "total_applications" => $drive["total_applications"],
+                                                "selected_count" => $drive["selected_count"],
+                                            ]); ?>)'>
                                             <i class="bi bi-eye"></i> View
                                         </button>
                                     </td>
@@ -325,5 +336,34 @@ while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
             </div>
         </main>
     </div>
+
+    <div id="driveDetailOverlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:999; align-items:center; justify-content:center;" onclick="if(event.target===this) document.getElementById('driveDetailOverlay').style.display='none'">
+        <div style="background:#1a1a3e; border:1px solid rgba(245,158,11,0.3); border-radius:16px; padding:28px; max-width:480px; width:90%; max-height:80vh; overflow-y:auto;">
+            <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:16px;">
+                <h2 id="dd_company" style="color:#F5F4FF; margin:0;"></h2>
+                <button type="button" onclick="document.getElementById('driveDetailOverlay').style.display='none'" style="background:none; border:none; color:rgba(245,244,255,0.6); font-size:1.4rem; cursor:pointer;">&times;</button>
+            </div>
+            <p style="color:rgba(245,244,255,0.7);" id="dd_job"></p>
+            <p style="color:rgba(245,244,255,0.6);"><i class="bi bi-cash"></i> Package: ₹<span id="dd_package"></span> LPA</p>
+            <p style="color:rgba(245,244,255,0.6);"><i class="bi bi-mortarboard"></i> Min CGPA: <span id="dd_cgpa"></span></p>
+            <p style="color:rgba(245,244,255,0.6);"><i class="bi bi-calendar"></i> Drive Date: <span id="dd_date"></span></p>
+            <p style="color:rgba(245,244,255,0.6);"><i class="bi bi-info-circle"></i> Status: <span id="dd_status"></span></p>
+            <p style="color:rgba(245,244,255,0.6);"><i class="bi bi-people"></i> <span id="dd_stats"></span></p>
+            <p style="color:rgba(245,244,255,0.85); margin-top:14px; padding-top:14px; border-top:1px solid rgba(255,255,255,0.1); line-height:1.6;" id="dd_description"></p>
+        </div>
+    </div>
+    <script>
+        function openDriveDetailModal(d) {
+            document.getElementById('dd_company').textContent = d.company_name;
+            document.getElementById('dd_job').textContent = d.job_title;
+            document.getElementById('dd_package').textContent = d.package_lpa;
+            document.getElementById('dd_cgpa').textContent = d.min_cgpa;
+            document.getElementById('dd_date').textContent = d.drive_date;
+            document.getElementById('dd_status').textContent = d.status;
+            document.getElementById('dd_stats').textContent = d.total_applications + ' applications, ' + d.selected_count + ' selected';
+            document.getElementById('dd_description').textContent = d.description;
+            document.getElementById('driveDetailOverlay').style.display = 'flex';
+        }
+    </script>
 </body>
 </html>

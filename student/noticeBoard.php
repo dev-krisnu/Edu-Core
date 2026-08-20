@@ -285,7 +285,15 @@ $notices = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                         <i class="bi bi-building"></i>
                                         <?php echo htmlspecialchars($notice['department'] ?? 'All'); ?>
                                     </span>
-                                    <button class="read-btn" onclick="alert('Full notice: ' + '<?php echo addslashes($notice['title']); ?>')">
+                                    <button class="read-btn" type="button"
+                                        onclick='openNoticeModal(<?php echo json_encode([
+                                            "title" => $notice["title"],
+                                            "content" => $notice["content"] ?? $notice["description"] ?? "",
+                                            "category" => $notice["category"] ?? "General",
+                                            "priority" => $priority,
+                                            "department" => $notice["department"] ?? "All",
+                                            "date" => $createdDate->format("M d, Y"),
+                                        ]); ?>)'>
                                         Read Full <i class="bi bi-arrow-right"></i>
                                     </button>
                                 </div>
@@ -301,5 +309,35 @@ $notices = $stmt->fetchAll(PDO::FETCH_ASSOC);
             </div>
         </main>
     </div>
+
+    <div id="noticeOverlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:999; align-items:center; justify-content:center;" onclick="if(event.target===this) closeNoticeModal()">
+        <div style="background:#1a1a3e; border:1px solid rgba(99,102,241,0.3); border-radius:16px; padding:28px; max-width:520px; width:90%; max-height:80vh; overflow-y:auto;">
+            <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:16px;">
+                <h2 id="notice_title" style="color:#F5F4FF; margin:0;"></h2>
+                <button type="button" onclick="closeNoticeModal()" style="background:none; border:none; color:rgba(245,244,255,0.6); font-size:1.4rem; cursor:pointer;">&times;</button>
+            </div>
+            <div style="display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap;">
+                <span class="meta-badge" id="notice_category"></span>
+                <span class="meta-badge" id="notice_priority" style="text-transform:uppercase;"></span>
+                <span class="department-tag" id="notice_department"></span>
+            </div>
+            <p style="color:rgba(245,244,255,0.5); font-size:0.85rem;" id="notice_date"></p>
+            <p style="color:rgba(245,244,255,0.85); line-height:1.7;" id="notice_content"></p>
+        </div>
+    </div>
+    <script>
+        function openNoticeModal(n) {
+            document.getElementById('notice_title').textContent = n.title;
+            document.getElementById('notice_category').textContent = n.category;
+            document.getElementById('notice_priority').textContent = n.priority;
+            document.getElementById('notice_department').textContent = n.department;
+            document.getElementById('notice_date').textContent = n.date;
+            document.getElementById('notice_content').textContent = n.content;
+            document.getElementById('noticeOverlay').style.display = 'flex';
+        }
+        function closeNoticeModal() {
+            document.getElementById('noticeOverlay').style.display = 'none';
+        }
+    </script>
 </body>
 </html>

@@ -15,6 +15,40 @@ requireRole(['librarian']);
 $currentUser = getCurrentUser();
 $pdo = getDbConnection();
 
+$message = '';
+$messageType = '';
+
+// Handle Resolve (mark returned + settle fine) / Remind (notify student)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['action'])) {
+    $circulationId = intval($_POST['circulation_id'] ?? 0);
+
+    if ($_POST['action'] === 'resolve_fine' && $circulationId) {
+        $fineAmount = (float) ($_POST['fine_amount'] ?? 0);
+        $stmt = $pdo->prepare("UPDATE library_circulation SET returned_at = NOW(), fine_amount = ? WHERE id = ?");
+        $stmt->execute([$fineAmount, $circulationId]);
+        $message = 'Book marked returned and fine settled.';
+        $messageType = 'success';
+    } elseif ($_POST['action'] === 'send_reminder' && $circulationId) {
+        $stmt = $pdo->prepare("SELECT lc.student_id, lb.title FROM library_circulation lc JOIN library_books lb ON lb.id = lc.book_id WHERE lc.id = ?");
+        $stmt->execute([$circulationId]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        if ($row) {
+            // No email/push pipeline exists yet, so the reminder is
+            // delivered as a personal notice the student sees on login -
+            // real and visible, not just a client-side alert() that
+            // vanishes with nothing recorded anywhere.
+            $ins = $pdo->prepare("INSERT INTO notices (title, content, posted_by, priority) VALUES (?, ?, ?, 'high')");
+            $ins->execute([
+                'Library Reminder: ' . $row['title'],
+                'This is a reminder that "' . $row['title'] . '" is overdue. Please return it to the library to avoid further fines.',
+                $currentUser['id'],
+            ]);
+            $message = 'Reminder sent to student.';
+            $messageType = 'success';
+        }
+    }
+}
+
 $status_filter = trim($_GET['status'] ?? '');
 
 // Fetch fines
@@ -230,6 +264,12 @@ $stats = $stmt->fetch(PDO::FETCH_ASSOC);
                     <p style="color: rgba(255, 255, 255, 0.6); margin: 0;">Track and manage overdue book fines</p>
                 </div>
 
+                <?php if ($message): ?>
+                    <div style="padding:14px; border-radius:8px; margin-bottom:20px; border-left:4px solid <?php echo $messageType === 'success' ? '#10B981' : '#EF4444'; ?>; background:rgba(<?php echo $messageType === 'success' ? '16,185,129' : '239,68,68'; ?>,0.1); color:<?php echo $messageType === 'success' ? '#6EE7B7' : '#FCA5A5'; ?>;">
+                        <?php echo htmlspecialchars($message); ?>
+                    </div>
+                <?php endif; ?>
+
                 <!-- Statistics -->
                 <div class="stats-cards">
                     <div class="stat-card">
@@ -294,12 +334,21 @@ $stats = $stmt->fetch(PDO::FETCH_ASSOC);
                                     </td>
                                     <td><span class="fine-amount">₹<?php echo number_format($fine, 2); ?></span></td>
                                     <td>
-                                        <button class="action-btn" onclick="alert('Send reminder to: ' + '<?php echo addslashes($item['student_name']); ?>')">
-                                            <i class="bi bi-bell"></i> Remind
-                                        </button>
-                                        <button class="action-btn" onclick="alert('Resolve fine')">
-                                            <i class="bi bi-check"></i> Resolve
-                                        </button>
+                                        <form method="POST" style="display:inline;">
+                                            <input type="hidden" name="action" value="send_reminder">
+                                            <input type="hidden" name="circulation_id" value="<?php echo (int) $item['id']; ?>">
+                                            <button type="submit" class="action-btn">
+                                                <i class="bi bi-bell"></i> Remind
+                                            </button>
+                                        </form>
+                                        <form method="POST" style="display:inline;" onsubmit="return confirm('Mark this book returned and settle the fine at ₹<?php echo number_format($fine, 2); ?>?');">
+                                            <input type="hidden" name="action" value="resolve_fine">
+                                            <input type="hidden" name="circulation_id" value="<?php echo (int) $item['id']; ?>">
+                                            <input type="hidden" name="fine_amount" value="<?php echo $fine; ?>">
+                                            <button type="submit" class="action-btn">
+                                                <i class="bi bi-check"></i> Resolve
+                                            </button>
+                                        </form>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>

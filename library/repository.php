@@ -15,6 +15,37 @@ requireRole(['librarian']);
 $currentUser = getCurrentUser();
 $pdo = getDbConnection();
 
+$message = '';
+$messageType = '';
+
+// Handle book edit
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'edit_book') {
+    $book_id = intval($_POST['book_id'] ?? 0);
+    $title = trim($_POST['title'] ?? '');
+    $author = trim($_POST['author'] ?? '');
+    $category = trim($_POST['category'] ?? '');
+    $total_copies = intval($_POST['total_copies'] ?? 0);
+    $available_copies = intval($_POST['available_copies'] ?? 0);
+
+    if ($book_id && $title && $total_copies >= 0 && $available_copies >= 0 && $available_copies <= $total_copies) {
+        try {
+            $stmt = $pdo->prepare("
+                UPDATE library_books SET title = ?, author = ?, category = ?, total_copies = ?, available_copies = ?
+                WHERE id = ?
+            ");
+            $stmt->execute([$title, $author, $category, $total_copies, $available_copies, $book_id]);
+            $message = 'Book updated successfully!';
+            $messageType = 'success';
+        } catch (Exception $e) {
+            $message = 'Error: ' . $e->getMessage();
+            $messageType = 'error';
+        }
+    } else {
+        $message = 'Available copies cannot exceed total copies.';
+        $messageType = 'error';
+    }
+}
+
 $category_filter = trim($_GET['category'] ?? '');
 
 // Fetch books
@@ -232,6 +263,12 @@ $stats = $stmt->fetch(PDO::FETCH_ASSOC);
                     <p style="color: rgba(255, 255, 255, 0.6); margin: 0;">Manage library inventory and book catalog</p>
                 </div>
 
+                <?php if ($message): ?>
+                    <div style="padding:14px; border-radius:8px; margin-bottom:20px; border-left:4px solid <?php echo $messageType === 'success' ? '#10B981' : '#EF4444'; ?>; background:rgba(<?php echo $messageType === 'success' ? '16,185,129' : '239,68,68'; ?>,0.1); color:<?php echo $messageType === 'success' ? '#6EE7B7' : '#FCA5A5'; ?>;">
+                        <?php echo htmlspecialchars($message); ?>
+                    </div>
+                <?php endif; ?>
+
                 <!-- Statistics -->
                 <div class="stats-cards">
                     <div class="stat-card">
@@ -306,7 +343,15 @@ $stats = $stmt->fetch(PDO::FETCH_ASSOC);
                                         </span>
                                     </td>
                                     <td>
-                                        <button class="action-btn" onclick="alert('Edit: ' + '<?php echo addslashes($book['title']); ?>')">
+                                        <button class="action-btn" type="button"
+                                            onclick='openEditBookModal(<?php echo json_encode([
+                                                "id" => $book["id"],
+                                                "title" => $book["title"],
+                                                "author" => $book["author"],
+                                                "category" => $book["category"],
+                                                "total_copies" => $book["total_copies"],
+                                                "available_copies" => $book["available_copies"],
+                                            ]); ?>)'>
                                             <i class="bi bi-pencil"></i> Edit
                                         </button>
                                     </td>
@@ -323,5 +368,38 @@ $stats = $stmt->fetch(PDO::FETCH_ASSOC);
             </div>
         </main>
     </div>
+
+    <!-- Edit Book Modal -->
+    <div id="editBookOverlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:999; align-items:center; justify-content:center;">
+        <div style="background:#1a1a3e; border:1px solid rgba(16,185,129,0.3); border-radius:16px; padding:28px; max-width:420px; width:90%;">
+            <h2 style="color:#F5F4FF; margin:0 0 20px 0;"><i class="bi bi-pencil-square"></i> Edit Book</h2>
+            <form method="POST">
+                <input type="hidden" name="action" value="edit_book">
+                <input type="hidden" name="book_id" id="edit_book_id">
+                <?php foreach ([['title','Title','text'],['author','Author','text'],['category','Category','text'],['total_copies','Total Copies','number'],['available_copies','Available Copies','number']] as [$field, $label, $type]): ?>
+                <div style="margin-bottom:12px;">
+                    <label style="display:block; margin-bottom:6px; color:rgba(245,244,255,0.8);"><?php echo $label; ?></label>
+                    <input type="<?php echo $type; ?>" name="<?php echo $field; ?>" id="edit_<?php echo $field; ?>"
+                        style="width:100%; padding:10px; border-radius:8px; border:1px solid rgba(16,185,129,0.3); background:rgba(255,255,255,0.05); color:#F5F4FF;" required>
+                </div>
+                <?php endforeach; ?>
+                <div style="display:flex; gap:10px; margin-top:10px;">
+                    <button type="submit" class="action-btn" style="flex:1; background:linear-gradient(120deg,#10B981,#6EE7B7);">Save Changes</button>
+                    <button type="button" class="action-btn" onclick="document.getElementById('editBookOverlay').style.display='none'">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <script>
+        function openEditBookModal(book) {
+            document.getElementById('edit_book_id').value = book.id;
+            document.getElementById('edit_title').value = book.title;
+            document.getElementById('edit_author').value = book.author;
+            document.getElementById('edit_category').value = book.category;
+            document.getElementById('edit_total_copies').value = book.total_copies;
+            document.getElementById('edit_available_copies').value = book.available_copies;
+            document.getElementById('editBookOverlay').style.display = 'flex';
+        }
+    </script>
 </body>
 </html>

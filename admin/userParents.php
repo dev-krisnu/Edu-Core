@@ -6,9 +6,17 @@ $user = getCurrentUser();
 $pageTitle = 'Parent Accounts';
 $basePath = '..';
 $pdo = getDbConnection();
-$parents = $pdo->query("SELECT id, full_name, email, phone, status FROM users WHERE role = 'parent' ORDER BY full_name")->fetchAll();
+$parents = $pdo->query("
+    SELECT p.id, p.full_name, p.email, p.phone, p.status,
+           GROUP_CONCAT(s.full_name SEPARATOR ', ') AS children
+    FROM users p
+    LEFT JOIN users s ON s.parent_id = p.id
+    WHERE p.role = 'parent'
+    GROUP BY p.id
+    ORDER BY p.full_name
+")->fetchAll();
 if (empty($parents)) {
-    $parents = [['full_name' => 'Demo Parent', 'email' => 'parent@educore.edu', 'phone' => '—', 'status' => 'active', 'id' => 0]];
+    $parents = [['full_name' => 'Demo Parent', 'email' => 'parent@educore.edu', 'phone' => '—', 'status' => 'active', 'id' => 0, 'children' => null]];
 }
 include __DIR__ . '/../includes/header.php';
 ?>
@@ -17,7 +25,8 @@ include __DIR__ . '/../includes/header.php';
 <?php foreach ($parents as $p): ?>
 <div class="stat-card mb-3 animate-slide-in">
 <strong><?= htmlspecialchars($p['full_name']) ?></strong><br>
-<span class="text-muted"><?= htmlspecialchars($p['email']) ?> · <?= htmlspecialchars($p['phone'] ?? '—') ?></span>
+<span class="text-muted"><?= htmlspecialchars($p['email']) ?> · <?= htmlspecialchars($p['phone'] ?? '—') ?></span><br>
+<span class="text-muted">Child(ren): <?= htmlspecialchars($p['children'] ?? 'None linked') ?></span>
 </div>
 <?php endforeach; ?>
 <p class="text-muted mt-3">Parents can view child scorecards, attendance, fees, and PTM schedules.</p>

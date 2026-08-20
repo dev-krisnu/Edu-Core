@@ -46,12 +46,20 @@ async function runCheck(type) {
     const text2 = document.getElementById('text2').value;
     if (!text1) { alert('Please paste content in Submission A'); return; }
 
-    const res = await fetch('../../api/check_plagiarism.php', {
+    const res = await fetch('../api/check_plagiarism.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ type, text1, text2 })
     });
+    if (!res.ok) {
+        alert('Plagiarism check failed (server error). Please try again.');
+        return;
+    }
     const data = await res.json();
+    if (data.error) {
+        alert('Error: ' + data.error);
+        return;
+    }
     const r = data.result;
     const panel = document.getElementById('resultPanel');
     panel.style.display = 'block';

@@ -15,6 +15,27 @@ requireRole(['student']);
 $currentUser = getCurrentUser();
 $pdo = getDbConnection();
 
+$flash = '';
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'register_event') {
+    $eventId = (int) ($_POST['event_id'] ?? 0);
+    if ($eventId) {
+        try {
+            $ins = $pdo->prepare("INSERT INTO event_attendance (event_id, student_id) VALUES (?, ?)");
+            $ins->execute([$eventId, $currentUser['id']]);
+            $flash = 'registered';
+        } catch (PDOException $e) {
+            // Unique constraint (event_id, student_id) - already registered.
+            $flash = 'already';
+        }
+    }
+}
+
+// Which events this student has already registered for, so the button
+// can show the real state instead of always saying "Register".
+$registeredStmt = $pdo->prepare("SELECT event_id FROM event_attendance WHERE student_id = ?");
+$registeredStmt->execute([$currentUser['id']]);
+$registeredEventIds = $registeredStmt->fetchAll(PDO::FETCH_COLUMN);
+
 // Fetch campus events created by the administration.
 $eventsStmt = $pdo->query("
     SELECT id, event_name AS title, description, event_date, category, location,
@@ -246,7 +267,7 @@ $events = $eventsStmt->fetchAll(PDO::FETCH_ASSOC);
                     <div class="events-grid">
                         <?php foreach ($events as $event): 
                             $eventDate = new DateTime($event['event_date']);
-                            $attendance = rand(15, 150);
+                            $isRegistered = in_array($event['id'], $registeredEventIds, true);
                         ?>
                             <div class="event-card">
                                 <div class="event-header">
@@ -287,14 +308,35 @@ $events = $eventsStmt->fetchAll(PDO::FETCH_ASSOC);
 
                                     <div class="attendance-count">
                                         <i class="bi bi-people"></i>
-                                        <span><?php echo $attendance; ?> Attending</span>
+                                        <span><?php
+                                            $countStmt = $pdo->prepare("SELECT COUNT(*) FROM event_attendance WHERE event_id = ?");
+                                            $countStmt->execute([$event['id']]);
+                                            echo (int) $countStmt->fetchColumn();
+                                        ?> Attending</span>
                                     </div>
 
                                     <div class="event-footer">
-                                        <button class="event-btn btn-register" onclick="alert('Registered for: ' + '<?php echo addslashes($event['title']); ?>')">
-                                            <i class="bi bi-check-circle"></i> Register
-                                        </button>
-                                        <button class="event-btn btn-details">
+                                        <?php if ($isRegistered): ?>
+                                            <button class="event-btn btn-register" disabled style="opacity:0.6; cursor:default;">
+                                                <i class="bi bi-check-circle-fill"></i> Registered
+                                            </button>
+                                        <?php else: ?>
+                                            <form method="POST" style="display:inline;">
+                                                <input type="hidden" name="action" value="register_event">
+                                                <input type="hidden" name="event_id" value="<?php echo (int) $event['id']; ?>">
+                                                <button type="submit" class="event-btn btn-register">
+                                                    <i class="bi bi-check-circle"></i> Register
+                                                </button>
+                                            </form>
+                                        <?php endif; ?>
+                                        <button class="event-btn btn-details" type="button"
+                                            onclick='openEventDetailModal(<?php echo json_encode([
+                                                "title" => $event["title"],
+                                                "description" => $event["description"] ?? "No description available.",
+                                                "date" => $eventDate->format("M d, Y — h:i A"),
+                                                "location" => $event["location"] ?? "Auditorium",
+                                                "category" => $event["category"] ?? "General",
+                                            ]); ?>)'>
                                             <i class="bi bi-info-circle"></i> Details
                                         </button>
                                     </div>
@@ -311,5 +353,28 @@ $events = $eventsStmt->fetchAll(PDO::FETCH_ASSOC);
             </div>
         </main>
     </div>
+
+    <div id="eventDetailOverlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:999; align-items:center; justify-content:center;" onclick="if(event.target===this) document.getElementById('eventDetailOverlay').style.display='none'">
+        <div style="background:#1a1a3e; border:1px solid rgba(99,102,241,0.3); border-radius:16px; padding:28px; max-width:480px; width:90%;">
+            <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:16px;">
+                <h2 id="ed_title" style="color:#F5F4FF; margin:0;"></h2>
+                <button type="button" onclick="document.getElementById('eventDetailOverlay').style.display='none'" style="background:none; border:none; color:rgba(245,244,255,0.6); font-size:1.4rem; cursor:pointer;">&times;</button>
+            </div>
+            <p style="color:rgba(245,244,255,0.6);"><i class="bi bi-tag"></i> <span id="ed_category"></span></p>
+            <p style="color:rgba(245,244,255,0.6);"><i class="bi bi-clock"></i> <span id="ed_date"></span></p>
+            <p style="color:rgba(245,244,255,0.6);"><i class="bi bi-geo-alt"></i> <span id="ed_location"></span></p>
+            <p style="color:rgba(245,244,255,0.85); margin-top:14px; line-height:1.7;" id="ed_description"></p>
+        </div>
+    </div>
+    <script>
+        function openEventDetailModal(e) {
+            document.getElementById('ed_title').textContent = e.title;
+            document.getElementById('ed_category').textContent = e.category;
+            document.getElementById('ed_date').textContent = e.date;
+            document.getElementById('ed_location').textContent = e.location;
+            document.getElementById('ed_description').textContent = e.description;
+            document.getElementById('eventDetailOverlay').style.display = 'flex';
+        }
+    </script>
 </body>
 </html>

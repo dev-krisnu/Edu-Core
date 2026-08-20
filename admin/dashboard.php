@@ -21,7 +21,7 @@ try {
         'active_users' => 'SELECT COUNT(*) as count FROM users WHERE status = "active"',
         'total_courses' => 'SELECT COUNT(*) as count FROM courses',
         'total_exams' => 'SELECT COUNT(*) as count FROM exams',
-        'recent_logs' => 'SELECT * FROM system_logs ORDER BY created_at DESC LIMIT 10',
+        'recent_logs' => 'SELECT sl.*, u.full_name AS user_name FROM system_logs sl LEFT JOIN users u ON u.id = sl.user_id ORDER BY sl.created_at DESC LIMIT 10',
         'user_breakdown' => 'SELECT role, COUNT(*) as count FROM users GROUP BY role'
     ];
 
@@ -315,7 +315,7 @@ try {
                                     <?php foreach ($stats['recent_logs'] as $log): ?>
                                         <tr>
                                             <td><?php echo htmlspecialchars($log['action'] ?? 'System Action'); ?></td>
-                                            <td><?php echo htmlspecialchars($log['user_id'] ?? 'System'); ?></td>
+                                            <td><?php echo htmlspecialchars($log['user_name'] ?? 'System'); ?></td>
                                             <td><?php echo date('M d, Y H:i', strtotime($log['created_at'])); ?></td>
                                             <td>
                                                 <span class="role-badge"><?php echo htmlspecialchars($log['module'] ?? 'general'); ?></span>
@@ -335,6 +335,5 @@ try {
         </main>
     </div>
 
-    <script src="../assets/js/educore.js"></script>
 </body>
 </html>
