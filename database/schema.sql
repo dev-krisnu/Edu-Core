@@ -149,6 +149,22 @@ CREATE TABLE IF NOT EXISTS fee_templates (
     due_date DATE
 );
 
+-- Staff payroll. finance/paySlip.php previously rendered 3 hardcoded
+-- staff names with fake net-pay numbers and a Download PDF button with
+-- no handler at all - nothing here came from the database.
+CREATE TABLE IF NOT EXISTS payroll (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    staff_id INT NOT NULL,
+    pay_month DATE NOT NULL,
+    basic DECIMAL(10,2) NOT NULL,
+    allowances DECIMAL(10,2) DEFAULT 0,
+    deductions DECIMAL(10,2) DEFAULT 0,
+    net_pay DECIMAL(10,2) NOT NULL,
+    generated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (staff_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_staff_month (staff_id, pay_month)
+);
+
 CREATE TABLE IF NOT EXISTS fee_invoices (
     id INT AUTO_INCREMENT PRIMARY KEY,
     student_id INT NOT NULL,
@@ -338,6 +354,20 @@ INSERT INTO courses (code, title, department, credits, faculty_id) VALUES
 ('ME301', 'Thermodynamics', 'Mechanical Engineering', 4, (SELECT id FROM users WHERE email = 'vikramnair@educore.edu')),
 ('PH101', 'Engineering Physics', 'Physics', 3, (SELECT id FROM users WHERE email = 'sunitarao@educore.edu'));
 
+-- A couple months of payroll for staff accounts, so paySlip.php has
+-- real rows instead of hardcoded names/amounts.
+INSERT INTO payroll (staff_id, pay_month, basic, allowances, deductions, net_pay)
+SELECT id, '2026-01-01', 40000, 8000, 2500, 45500 FROM users WHERE email = 'finance@educore.edu'
+UNION ALL SELECT id, '2026-02-01', 40000, 8000, 2500, 45500 FROM users WHERE email = 'finance@educore.edu'
+UNION ALL SELECT id, '2026-01-01', 72000, 15000, 4200, 82800 FROM users WHERE email = 'librarian@educore.edu'
+UNION ALL SELECT id, '2026-02-01', 72000, 15000, 4200, 82800 FROM users WHERE email = 'librarian@educore.edu'
+UNION ALL SELECT id, '2026-01-01', 58000, 9000, 3100, 63900 FROM users WHERE email = 'lakhanmahato@educore.edu'
+UNION ALL SELECT id, '2026-02-01', 58000, 9000, 3100, 63900 FROM users WHERE email = 'lakhanmahato@educore.edu'
+UNION ALL SELECT id, '2026-01-01', 55000, 9000, 3000, 61000 FROM users WHERE email = 'faculty@educore.edu'
+UNION ALL SELECT id, '2026-02-01', 55000, 9000, 3000, 61000 FROM users WHERE email = 'faculty@educore.edu'
+UNION ALL SELECT id, '2026-01-01', 61000, 8500, 3300, 66200 FROM users WHERE email = 'tpo@educore.edu'
+UNION ALL SELECT id, '2026-02-01', 61000, 8500, 3300, 66200 FROM users WHERE email = 'tpo@educore.edu';
+
 INSERT INTO fee_templates (name, category, amount, penalty_percent, due_date) VALUES
 ('Semester Tuition Fee', 'tuition', 45000.00, 2.00, '2026-03-31'),
 ('Hostel Fee', 'hostel', 18000.00, 1.50, '2026-03-15'),
@@ -347,7 +377,6 @@ INSERT INTO fee_invoices (student_id, template_id, amount, status) VALUES
 (4, 1, 45000.00, 'pending'),
 (4, 2, 18000.00, 'paid'),
 (4, 3, 5000.00, 'pending');
-
 
 INSERT INTO library_books (isbn, title, author, category, qr_code, total_copies, available_copies, shelf_location) VALUES
 -- CS101: Introduction to Programming
@@ -398,7 +427,6 @@ INSERT INTO library_books (isbn, title, author, category, qr_code, total_copies,
 ('9789352533916', 'A Textbook of Engineering Physics', 'M.N. Avadhanulu', 'Physics', 'QR-PH101-01', 5, 4, 'F-01'),
 ('9780070495531', 'Concepts of Modern Physics', 'Arthur Beiser', 'Physics', 'QR-PH101-02', 4, 3, 'F-02');
 
-
 INSERT INTO placement_drives (company_name, job_title, description, min_cgpa, package_lpa, drive_date, status) VALUES
 -- Tier 1 Tech / Product
 ('Tata Consultancy Services', 'Systems Engineer (Digital)', 'Full-stack application engineering and cloud services', 6.50, 7.00, '2026-03-10', 'completed'),
@@ -424,8 +452,6 @@ INSERT INTO placement_drives (company_name, job_title, description, min_cgpa, pa
 
 -- High-growth Startups / E-commerce
 ('Flipkart', 'SDE-1', 'Supply chain automation engines and high-throughput web architectures', 7.50, 26.00, '2026-06-10', 'upcoming');
-
-
 
 -- Link the demo parent to a demo student, and seed one completed exam +
 -- graded result so the parent scorecard / student exam-results pages have
