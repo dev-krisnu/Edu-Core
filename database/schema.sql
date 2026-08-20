@@ -21,6 +21,17 @@ CREATE TABLE IF NOT EXISTS users (
     FOREIGN KEY (parent_id) REFERENCES users(id) ON DELETE SET NULL
 );
 
+CREATE TABLE IF NOT EXISTS courses (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    code VARCHAR(20) NOT NULL UNIQUE,
+    title VARCHAR(200) NOT NULL,
+    department VARCHAR(100),
+    credits INT DEFAULT 3,
+    semester INT DEFAULT NULL,
+    faculty_id INT,
+    FOREIGN KEY (faculty_id) REFERENCES users(id) ON DELETE SET NULL
+);
+
 -- Which students are enrolled in which courses (used for enrollment
 -- counts and attendance rosters).
 CREATE TABLE IF NOT EXISTS course_enrollments (
@@ -57,7 +68,6 @@ CREATE TABLE IF NOT EXISTS notices (
     is_public TINYINT(1) NOT NULL DEFAULT 1,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (posted_by) REFERENCES users(id) ON DELETE SET NULL
-
 );
 
 CREATE TABLE IF NOT EXISTS events (
@@ -79,38 +89,6 @@ CREATE TABLE IF NOT EXISTS event_attendance (
     UNIQUE KEY uniq_event_student (event_id, student_id),
     FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE,
     FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE
-);
-
-CREATE TABLE IF NOT EXISTS events (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    event_name VARCHAR(200) NOT NULL,
-    description TEXT,
-    event_date DATETIME NOT NULL,
-    location VARCHAR(200) NOT NULL,
-    category VARCHAR(100) NOT NULL,
-    status ENUM('active','cancelled','completed') NOT NULL DEFAULT 'active',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE IF NOT EXISTS event_attendance (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    event_id INT NOT NULL,
-    student_id INT NOT NULL,
-    registered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE KEY uniq_event_student (event_id, student_id),
-    FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE,
-    FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE
-);
-
-CREATE TABLE IF NOT EXISTS courses (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    code VARCHAR(20) NOT NULL UNIQUE,
-    title VARCHAR(200) NOT NULL,
-    department VARCHAR(100),
-    credits INT DEFAULT 3,
-    semester INT DEFAULT NULL,
-    faculty_id INT,
-    FOREIGN KEY (faculty_id) REFERENCES users(id) ON DELETE SET NULL
 );
 
 CREATE TABLE IF NOT EXISTS exams (
@@ -241,6 +219,55 @@ CREATE TABLE IF NOT EXISTS placement_applications (
     FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
+-- Student project/assignment submissions. Previously students uploaded
+-- files to disk with no DB record at all, so faculty had no way to see
+-- what was submitted (Bug: "submitproject kaha jaa raha hai").
+CREATE TABLE IF NOT EXISTS project_submissions (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    student_id INT NOT NULL,
+    course_id INT,
+    title VARCHAR(200) NOT NULL,
+    description TEXT,
+    file_path VARCHAR(255) NOT NULL,
+    status ENUM('submitted','under_review','approved','rejected') DEFAULT 'submitted',
+    feedback TEXT,
+    graded_by INT DEFAULT NULL,
+    submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE SET NULL,
+    FOREIGN KEY (graded_by) REFERENCES users(id) ON DELETE SET NULL
+);
+
+-- Faculty-uploaded lecture notes / slides / materials. Previously
+-- resourceUpload.php saved the file to disk and logged a text line to
+-- system_logs, but no page anywhere queried it back out for students.
+CREATE TABLE IF NOT EXISTS resources (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    title VARCHAR(200) NOT NULL,
+    course_id INT,
+    uploaded_by INT NOT NULL,
+    file_path VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE SET NULL,
+    FOREIGN KEY (uploaded_by) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Parent-teacher meeting slots. Previously both faculty/ptmScheduler.php
+-- and parent/ptm.php rendered a hardcoded PHP array - the "Schedule"
+-- form appeared to work but never persisted anything.
+CREATE TABLE IF NOT EXISTS ptm_schedules (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    faculty_id INT NOT NULL,
+    student_id INT NOT NULL,
+    meeting_date DATE NOT NULL,
+    meeting_time TIME NOT NULL,
+    topic VARCHAR(255),
+    status ENUM('pending','confirmed','completed','cancelled') DEFAULT 'pending',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (faculty_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
 CREATE TABLE IF NOT EXISTS system_logs (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT,
@@ -252,10 +279,18 @@ CREATE TABLE IF NOT EXISTS system_logs (
 );
 
 -- Demo users (password: password123 for all)
+-- Users. faculty_id values on courses below are matched to the
+-- faculty accounts here (previously several courses were assigned to
+-- STUDENT accounts by id-position mistake - fixed by adding one real
+-- faculty member per department instead of overloading id numbers).
 INSERT INTO users (full_name, email, password_hash, role, phone) VALUES
 ('Super Admin', 'admin@educore.edu', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'super_admin', '948836388'),
 ('Faculty Demo', 'faculty@educore.edu', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'faculty', '9000000001'),
 ('Mr. Lakhan Mahato', 'lakhanmahato@educore.edu', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'faculty', '6295939450'),
+('Dr. Ananya Sen', 'ananyasen@educore.edu', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'faculty', '9123456780'),
+('Prof. Rahul Verma', 'rahulverma@educore.edu', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'faculty', '9123456781'),
+('Dr. Vikram Nair', 'vikramnair@educore.edu', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'faculty', '9123456782'),
+('Prof. Sunita Rao', 'sunitarao@educore.edu', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'faculty', '9123456783'),
 ('Krrish Jeswar', 'krrishjeswar@educore.edu', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'student', '9679469493'),
 ('Manish Kumar Chowdhury', 'manishkumarchowdhury@educore.edu', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'student', '8327657732'),
 ('Komal Shaw', 'komalshaw@educore.edu', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'student', '7029447905'),
@@ -264,26 +299,44 @@ INSERT INTO users (full_name, email, password_hash, role, phone) VALUES
 ('Finance Officer', 'finance@educore.edu', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'finance', '4956936438'),
 ('Library Manager', 'librarian@educore.edu', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'librarian', '0688659608'),
 ('TPO Head', 'tpo@educore.edu', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'tpo', '9876543215'),
-('Parent Demo', 'parent@educore.edu', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'parent', '9000000002');
+('Parent Demo', 'parent@educore.edu', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'parent', '9000000002'),
+('Mrs. Chowdhury', 'chowdhuryparent@educore.edu', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'parent', '9000000003'),
+('Mr. Shaw', 'shawparent@educore.edu', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'parent', '9000000004');
+
+-- Link each demo parent account to their child (previously no student
+-- had parent_id set at all, so every "parent" page had nothing real
+-- to show regardless of how many parent accounts existed).
+UPDATE users SET parent_id = (SELECT id FROM users WHERE email = 'parent@educore.edu')
+    WHERE email = 'krrishjeswar@educore.edu';
+UPDATE users SET parent_id = (SELECT id FROM users WHERE email = 'chowdhuryparent@educore.edu')
+    WHERE email = 'manishkumarchowdhury@educore.edu';
+UPDATE users SET parent_id = (SELECT id FROM users WHERE email = 'shawparent@educore.edu')
+    WHERE email = 'komalshaw@educore.edu';
 
 INSERT INTO notices (title, content, posted_by, priority) VALUES
 ('Welcome to EduCore 2026', 'Unified AI-Powered ERP & LMS is now live. Explore AI Tutor, Proctored Exams, and QR Library!', 1, 'high'),
 ('Mid-Semester Exam Schedule', 'Exams begin March 15. Check your exam terminal for proctored sessions.', 1, 'medium'),
-('Placement Drive - TechCorp', 'TechCorp hiring SDE interns. Min CGPA 7.0. Apply via Placement Portal.', 6, 'high');
+('Placement Drive - TechCorp', 'TechCorp hiring SDE interns. Min CGPA 7.0. Apply via Placement Portal.',
+    (SELECT id FROM users WHERE email = 'tpo@educore.edu'), 'high');
 
+-- Courses. faculty_id now points only at real faculty accounts above -
+-- previously EC101/EC405/MA101/MA204/ME102/ME301/PH101 were assigned to
+-- STUDENT accounts (ids that happened to land in the faculty_id column),
+-- which is why most departments showed zero courses in any faculty
+-- member's "Create Exam" dropdown.
 INSERT INTO courses (code, title, department, credits, faculty_id) VALUES
-('CS101', 'Introduction to Programming', 'Computer Science', 3, 1),
-('CS202', 'Database Management Systems', 'Computer Science', 4, 3),
-('CS305', 'Operating Systems', 'Computer Science', 4, 1),
-('CS420', 'Artificial Intelligence', 'Computer Science', 4, 2),
-('EC101', 'Basic Electronics', 'Electronics', 3, 4),
-('EC302', 'Microprocessors & Microcontrollers', 'Electronics', 4, 2),
-('EC405', 'Embedded Systems', 'Electronics', 3, 5),
-('MA101', 'Calculus & Linear Algebra', 'Mathematics', 4, 6),
-('MA204', 'Discrete Mathematics', 'Mathematics', 3, 6),
-('ME102', 'Engineering Mechanics', 'Mechanical Engineering', 3, 7),
-('ME301', 'Thermodynamics', 'Mechanical Engineering', 4, 7),
-('PH101', 'Engineering Physics', 'Physics', 3, 8);
+('CS101', 'Introduction to Programming', 'Computer Science', 3, (SELECT id FROM users WHERE email = 'faculty@educore.edu')),
+('CS202', 'Database Management Systems', 'Computer Science', 4, (SELECT id FROM users WHERE email = 'lakhanmahato@educore.edu')),
+('CS305', 'Operating Systems', 'Computer Science', 4, (SELECT id FROM users WHERE email = 'faculty@educore.edu')),
+('CS420', 'Artificial Intelligence', 'Computer Science', 4, (SELECT id FROM users WHERE email = 'lakhanmahato@educore.edu')),
+('EC101', 'Basic Electronics', 'Electronics', 3, (SELECT id FROM users WHERE email = 'ananyasen@educore.edu')),
+('EC302', 'Microprocessors & Microcontrollers', 'Electronics', 4, (SELECT id FROM users WHERE email = 'ananyasen@educore.edu')),
+('EC405', 'Embedded Systems', 'Electronics', 3, (SELECT id FROM users WHERE email = 'ananyasen@educore.edu')),
+('MA101', 'Calculus & Linear Algebra', 'Mathematics', 4, (SELECT id FROM users WHERE email = 'rahulverma@educore.edu')),
+('MA204', 'Discrete Mathematics', 'Mathematics', 3, (SELECT id FROM users WHERE email = 'rahulverma@educore.edu')),
+('ME102', 'Engineering Mechanics', 'Mechanical Engineering', 3, (SELECT id FROM users WHERE email = 'vikramnair@educore.edu')),
+('ME301', 'Thermodynamics', 'Mechanical Engineering', 4, (SELECT id FROM users WHERE email = 'vikramnair@educore.edu')),
+('PH101', 'Engineering Physics', 'Physics', 3, (SELECT id FROM users WHERE email = 'sunitarao@educore.edu'));
 
 INSERT INTO fee_templates (name, category, amount, penalty_percent, due_date) VALUES
 ('Semester Tuition Fee', 'tuition', 45000.00, 2.00, '2026-03-31'),
